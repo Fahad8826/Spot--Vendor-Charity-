@@ -1,11 +1,11 @@
 import 'dart:convert';
+import 'dart:io';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:http/http.dart' as http;
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
+import 'package:http/http.dart' as http;
 import 'package:image_picker/image_picker.dart';
-import 'dart:io';
-
 import 'package:spot/charity/Navbar/charitybottomnavigation.dart';
 
 class CharityRegistration extends StatefulWidget {
@@ -16,15 +16,16 @@ class CharityRegistration extends StatefulWidget {
 }
 
 class _CharityRegistrationState extends State<CharityRegistration> {
-  final _usernamecontroler = TextEditingController();
-  final _Emailcontroler = TextEditingController();
-  final _numbercontroler = TextEditingController();
-  final _categorycontroler = TextEditingController();
-
+  final _usernameController = TextEditingController();
+  final _emailController = TextEditingController();
+  final _numberController = TextEditingController();
+  final _categoryController = TextEditingController();
   File? _image;
   final ImagePicker _picker = ImagePicker();
   final _formKey = GlobalKey<FormState>();
+  final bool _isLoading = false;
 
+  // Function to upload image to Cloudinary
   Future<String?> _uploadToCloudinary() async {
     if (_image == null) return null;
 
@@ -53,10 +54,9 @@ class _CharityRegistrationState extends State<CharityRegistration> {
     }
   }
 
-  // Function to pick an image from gallery or camera
+  // Function to pick an image from gallery
   Future<void> _pickImage(ImageSource source) async {
     final pickedFile = await _picker.pickImage(source: source);
-
     if (pickedFile != null) {
       setState(() {
         _image = File(pickedFile.path);
@@ -64,182 +64,186 @@ class _CharityRegistrationState extends State<CharityRegistration> {
     }
   }
 
-  // Form validation check
+  // Form Validation
   bool _validateForm() {
-    if (_formKey.currentState!.validate()) {
-      return true;
+    return _formKey.currentState!.validate();
+  }
+
+  // Save data to Firestore
+  Future<void> _saveProfile() async {
+    if (!_validateForm()) return;
+
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text("Please log in to save your profile")));
+      return;
     }
-    return false;
+
+    String? imageUrl = await _uploadToCloudinary();
+    if (imageUrl == null) {
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text("Failed to upload image")));
+      return;
+    }
+
+    try {
+      await FirebaseFirestore.instance
+          .collection('charity_reg')
+          .doc(user.uid)
+          .set({
+        'name': _usernameController.text,
+        'number': _numberController.text,
+        'email': _emailController.text,
+        'category': _categoryController.text,
+        'image': imageUrl,
+      });
+
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text("Profile saved successfully!")));
+      Navigator.push(
+          context, MaterialPageRoute(builder: (context) => CharityBottomNav()));
+    } catch (e) {
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text("Failed to save profile: $e")));
+    }
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white,
-      appBar: AppBar(title: Text('Charity Registration')),
-      body: Center(
-        child: SingleChildScrollView(
-          child: Column(
-            children: [
-              Padding(
-                padding: const EdgeInsets.all(8.0),
-                child: GestureDetector(
-                  onTap: () => _pickImage(ImageSource.gallery),
-                  child: CircleAvatar(
-                    radius: 70,
-                    backgroundColor: Colors.grey.shade300,
-                    backgroundImage: _image != null ? FileImage(_image!) : null,
-                    child: _image == null
-                        ? Icon(Icons.person,
-                            size: 50, color: Colors.grey.shade600)
-                        : null,
-                  ),
-                ),
-              ),
-
-              // Form with validation
-              Form(
-                key: _formKey,
-                child: Column(
-                  children: [
-                    Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 20),
-                      child: TextFormField(
-                        controller: _usernamecontroler,
-                        decoration: InputDecoration(
-                          border: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(20)),
-                          hintText: 'Username',
-                          prefixIcon: Icon(Icons.person),
-                        ),
-                        validator: (value) {
-                          if (value == null || value.isEmpty) {
-                            return 'Please enter a username';
-                          }
-                          return null;
-                        },
-                      ),
-                    ),
-                    SizedBox(height: 10),
-                    Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 20),
-                      child: TextFormField(
-                        controller: _Emailcontroler,
-                        decoration: InputDecoration(
-                          border: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(20)),
-                          hintText: 'Email',
-                          prefixIcon: Icon(Icons.email),
-                        ),
-                        validator: (value) {
-                          if (value == null || value.isEmpty) {
-                            return 'Please enter an email';
-                          } else if (!RegExp(
-                                  r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$')
-                              .hasMatch(value)) {
-                            return 'Enter a valid email';
-                          }
-                          return null;
-                        },
-                      ),
-                    ),
-                    SizedBox(height: 10),
-                    Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 20),
-                      child: TextFormField(
-                        controller: _numbercontroler,
-                        decoration: InputDecoration(
-                          border: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(20)),
-                          hintText: 'Phone Number',
-                          prefixIcon: Icon(Icons.phone),
-                        ),
-                        validator: (value) {
-                          if (value == null || value.isEmpty) {
-                            return 'Please enter phone number';
-                          } else if (!RegExp(r'^\d{10}$').hasMatch(value)) {
-                            return 'Enter a valid 10-digit phone number';
-                          }
-                          return null;
-                        },
-                      ),
-                    ),
-                    SizedBox(height: 10),
-                    Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 20),
-                      child: TextFormField(
-                        controller: _categorycontroler,
-                        decoration: InputDecoration(
-                          border: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(20)),
-                          hintText: 'Category',
-                          prefixIcon: Icon(Icons.category),
-                        ),
-                        validator: (value) {
-                          if (value == null || value.isEmpty) {
-                            return 'Please enter category';
-                          }
-                          return null;
-                        },
-                      ),
-                    ),
-                    SizedBox(height: 20),
-                  ],
-                ),
-              ),
-
-              SizedBox(height: 20),
-
-              // Submit button
-              ElevatedButton(
-                  onPressed: () async {
-                    // Validate form before proceeding
-                    if (_formKey.currentState!.validate()) {
-                      final user = FirebaseAuth.instance.currentUser;
-                      if (user == null) {
-                        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-                            content:
-                                Text("Please log in to save your profile")));
-                        return;
-                      }
-
-                      // Upload image to Cloudinary
-                      String? imageUrl = await _uploadToCloudinary();
-
-                      if (imageUrl == null) {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(content: Text("Failed to upload image")));
-                        return;
-                      }
-
-                      // Save profile data to Firestore
-                      try {
-                        await FirebaseFirestore.instance
-                            .collection('charity_reg')
-                            .doc(user.uid)
-                            .set({
-                          'name': _usernamecontroler.text,
-                          'number': _numbercontroler.text,
-                          'email': _Emailcontroler.text,
-                          'category': _categorycontroler.text,
-                          'image': imageUrl,
-                        });
-                        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-                            content: Text("Profile saved successfully!")));
-                        Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                                builder: (context) => CharityBottomNav()));
-                      } catch (e) {
-                        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-                            content: Text("Failed to save profile: $e")));
-                      }
-                    }
-                  },
-                  child: Text('Create User'))
-            ],
+      appBar: AppBar(
+        title: Text(
+          'Registration',
+          style: GoogleFonts.poppins(
+            fontWeight: FontWeight.w600,
+            fontSize: 22,
+            color: Colors.white,
           ),
         ),
+        backgroundColor: Colors.transparent,
+        automaticallyImplyLeading: false,
+      ),
+      extendBodyBehindAppBar: true,
+      body: Container(
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            colors: [Color(0xFF053E51), Color(0xFF2E8B57)],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ),
+        ),
+        child: Center(
+          child: SingleChildScrollView(
+            child: Column(
+              children: [
+                Padding(
+                  padding: const EdgeInsets.all(8.0),
+                  child: GestureDetector(
+                    onTap: () => _pickImage(ImageSource.gallery),
+                    child: CircleAvatar(
+                      radius: 70,
+                      backgroundColor: Colors.grey.shade300,
+                      backgroundImage:
+                          _image != null ? FileImage(_image!) : null,
+                      child: _image == null
+                          ? Icon(Icons.person,
+                              size: 50, color: Colors.grey.shade600)
+                          : null,
+                    ),
+                  ),
+                ),
+
+                // Form
+                Form(
+                  key: _formKey,
+                  child: Column(
+                    children: [
+                      _buildTextField(
+                          _usernameController, 'Username', Icons.person),
+                      _buildTextField(_emailController, 'Email', Icons.email,
+                          isEmail: true),
+                      _buildTextField(
+                          _numberController, 'Phone Number', Icons.phone,
+                          isPhone: true),
+                      _buildTextField(
+                          _categoryController, 'Category', Icons.category),
+                      SizedBox(height: 20),
+                    ],
+                  ),
+                ),
+                Container(
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(10),
+                    gradient: LinearGradient(
+                      colors: [Color(0xFF053E51), Color(0xFF2E8B57)],
+                    ),
+                  ),
+                  child: ElevatedButton(
+                    onPressed: _isLoading ? null : _saveProfile,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.transparent,
+                      shadowColor: Colors.transparent,
+                      padding: const EdgeInsets.symmetric(
+                          vertical: 15, horizontal: 30),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                    ),
+                    child: _isLoading
+                        ? const SizedBox(
+                            height: 20,
+                            width: 20,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              color: Colors.white,
+                            ),
+                          )
+                        : Text(
+                            'Register',
+                            style: GoogleFonts.poppins(
+                              textStyle: TextStyle(
+                                fontSize: 20,
+                                fontWeight: FontWeight.w600,
+                                color: Colors.white,
+                              ),
+                            ),
+                          ),
+                  ),
+                ),
+                SizedBox(height: 20),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  // Custom Widget for TextField
+  Widget _buildTextField(
+      TextEditingController controller, String hint, IconData icon,
+      {bool isEmail = false, bool isPhone = false}) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+      child: TextFormField(
+        controller: controller,
+        decoration: InputDecoration(
+          border: OutlineInputBorder(borderRadius: BorderRadius.circular(20)),
+          hintText: hint,
+          prefixIcon: Icon(icon),
+          hintStyle: GoogleFonts.poppins(),
+        ),
+        keyboardType: isPhone ? TextInputType.phone : TextInputType.text,
+        validator: (value) {
+          if (value == null || value.isEmpty) return 'Please enter $hint';
+          if (isEmail &&
+              !RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$').hasMatch(value))
+            return 'Enter a valid email';
+          if (isPhone && !RegExp(r'^\d{10}$').hasMatch(value))
+            return 'Enter a valid 10-digit phone number';
+          return null;
+        },
       ),
     );
   }

@@ -2,6 +2,7 @@ import 'dart:developer';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:spot/charity/screens/charityRegistration.dart';
 import 'package:spot/vendor/screens/vendorRegistrationpage.dart';
 
@@ -36,114 +37,121 @@ class _SignupPageState extends State<SignupPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-     
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16.0),
-        child: Form(
-          key: _formKey,
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              const SizedBox(height: 20),
-              Center(
-                child: Text(
-                  'Sign Up',
-                  style: TextStyle(
-                    fontSize: 32,
-                    fontWeight: FontWeight.bold,
-                    color: Color.fromARGB(255, 5, 62, 81),
+      body: Container(
+        decoration: const BoxDecoration(
+          gradient: LinearGradient(
+            colors: [Color(0xFF053E51), Color(0xFF2E8B57)],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ),
+        ),
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.all(16.0),
+          child: Form(
+            key: _formKey,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                const SizedBox(height: 40),
+                Center(
+                  child: Text(
+                    'Sign Up',
+                    style: GoogleFonts.poppins(
+                      fontSize: 22,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white,
+                    ),
                   ),
                 ),
-              ),
-              const SizedBox(height: 20),
-              Card(
-                elevation: 4,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(10),
+                const SizedBox(height: 30),
+                _buildTextField(
+                  controller: _nameController,
+                  label: 'Full Name',
+                  icon: Icons.account_circle,
                 ),
-                child: Padding(
-                  padding: const EdgeInsets.all(20.0),
-                  child: Column(
-                    children: [
-                      _buildTextField(
-                        controller: _nameController,
-                        label: 'Full Name',
-                        icon: Icons.person,
+                const SizedBox(height: 16),
+                _buildTextField(
+                  controller: _emailController,
+                  label: 'Email',
+                  icon: Icons.alternate_email,
+                  keyboardType: TextInputType.emailAddress,
+                ),
+                const SizedBox(height: 16),
+                _buildPasswordField(
+                  controller: _passwordController,
+                  label: 'Password',
+                  obscureText: _obscurePassword,
+                  onToggle: () =>
+                      setState(() => _obscurePassword = !_obscurePassword),
+                ),
+                const SizedBox(height: 16),
+                _buildPasswordField(
+                  controller: _confirmPasswordController,
+                  label: 'Confirm Password',
+                  obscureText: _obscureConfirmPassword,
+                  onToggle: () => setState(
+                      () => _obscureConfirmPassword = !_obscureConfirmPassword),
+                ),
+                const SizedBox(height: 16),
+                DropdownButtonFormField<String>(
+                  value: _selectedRole,
+                  decoration: InputDecoration(
+                    hintText: 'Select Role',
+                    prefixIcon: const Icon(Icons.supervised_user_circle),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                  ),
+                  items: const [
+                    DropdownMenuItem(value: 'vendor', child: Text('Vendor')),
+                    DropdownMenuItem(value: 'charity', child: Text('Charity')),
+                  ],
+                  onChanged: (value) => setState(() => _selectedRole = value!),
+                ),
+                const SizedBox(height: 24),
+                Container(
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(10),
+                    gradient: LinearGradient(
+                      colors: [Color(0xFF053E51), Color(0xFF2E8B57)],
+                    ),
+                  ),
+                  child: ElevatedButton(
+                    onPressed: _isLoading ? null : _signup,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.transparent,
+                      shadowColor: Colors.transparent,
+                      padding: const EdgeInsets.symmetric(vertical: 15),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(10),
                       ),
-                      const SizedBox(height: 16),
-                      _buildemailFeild(
-                        controller: _emailController,
-                        Label: 'Email',
-                        icon: Icons.email,
-                        keyboardType: TextInputType.emailAddress,
-                      ),
-                      const SizedBox(height: 16),
-                      _buildPasswordField(
-                        controller: _passwordController,
-                        label: 'Password',
-                        obscureText: _obscurePassword,
-                        onToggle: () => setState(
-                            () => _obscurePassword = !_obscurePassword),
-                      ),
-                      const SizedBox(height: 16),
-                      _buildPasswordField(
-                        controller: _confirmPasswordController,
-                        label: 'Confirm Password',
-                        obscureText: _obscureConfirmPassword,
-                        onToggle: () => setState(() =>
-                            _obscureConfirmPassword = !_obscureConfirmPassword),
-                      ),
-                      const SizedBox(height: 16),
-                      DropdownButtonFormField<String>(
-                        value: _selectedRole,
-                        decoration: InputDecoration(
-                          labelText: 'Select Role',
-                          prefixIcon: const Icon(Icons.person_outline),
-                          border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(10),
-                          ),
-                        ),
-                        items: const [
-                          DropdownMenuItem(
-                              value: 'vendor', child: Text('Vendor')),
-                          DropdownMenuItem(
-                              value: 'charity', child: Text('Charity')),
-                        ],
-                        onChanged: (value) =>
-                            setState(() => _selectedRole = value!),
-                      ),
-                      const SizedBox(height: 24),
-                      ElevatedButton(
-                        onPressed: _isLoading ? null : _signup,
-                        style: ElevatedButton.styleFrom(
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(10),
-                          ),
-                          backgroundColor: Color.fromARGB(255, 5, 62, 81),
-                        ),
-                        child: _isLoading
-                            ? const SizedBox(
-                                height: 20,
-                                width: 20,
-                                child: CircularProgressIndicator(
-                                  strokeWidth: 2,
-                                  color: Colors.white,
-                                ),
-                              )
-                            : const Text(
-                                'Sign Up',
-                                style: TextStyle(
-                                  fontSize: 16,
-                                  color: Colors.white,
-                                  fontWeight: FontWeight.w600,
-                                ),
+                    ),
+                    child: _isLoading
+                        ? const SizedBox(
+                            height: 20,
+                            width: 20,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              color: Colors.white,
+                            ),
+                          )
+                        : Text(
+                            'Sign Up',
+                            style: GoogleFonts.poppins(
+                              textStyle: TextStyle(
+                                fontSize: 20,
+                                fontWeight: FontWeight.w600,
+                                color: Colors.white,
                               ),
-                      ),
-                    ],
+                            ),
+                          ),
                   ),
                 ),
-              ),
-            ],
+                SizedBox(
+                  height: 390,
+                )
+              ],
+            ),
           ),
         ),
       ),
@@ -159,7 +167,7 @@ class _SignupPageState extends State<SignupPage> {
     return TextFormField(
       controller: controller,
       decoration: InputDecoration(
-        labelText: label,
+        hintText: label,
         labelStyle: TextStyle(color: Colors.black87),
         prefixIcon: Icon(icon, color: Color.fromARGB(255, 5, 62, 81)),
         border: OutlineInputBorder(
@@ -175,12 +183,6 @@ class _SignupPageState extends State<SignupPage> {
         }
 
         // Ensure the input contains only standard characters (letters and spaces) with length between 3 and 30
-        String pattern = r'^[a-zA-Z\s]{3,30}$';
-        RegExp regex = RegExp(pattern);
-
-        if (!regex.hasMatch(value)) {
-          return '$label must contain only letters and spaces (3 to 30 characters)';
-        }
 
         return null;
       },
@@ -196,7 +198,7 @@ class _SignupPageState extends State<SignupPage> {
     return TextFormField(
       controller: controller,
       decoration: InputDecoration(
-        labelText: label,
+        hintText: label,
         labelStyle: TextStyle(color: Colors.black87),
         prefixIcon:
             const Icon(Icons.lock, color: Color.fromARGB(255, 5, 62, 81)),

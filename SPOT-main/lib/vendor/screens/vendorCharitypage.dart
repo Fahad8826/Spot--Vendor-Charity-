@@ -4,7 +4,6 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:awesome_notifications/awesome_notifications.dart';
 import 'package:spot/vendor/Navbar/vendorbottomnavigation.dart';
-import 'package:spot/vendor/screens/vendorcharityRead.dart';
 
 class VendorCharityPage extends StatefulWidget {
   const VendorCharityPage({super.key});
@@ -75,63 +74,75 @@ class _VendorCharityPageState extends State<VendorCharityPage> {
       appBar: AppBar(
         title: Text(
           'Charity Form',
-          
+          style: GoogleFonts.poppins(
+            fontSize: 20,
+            fontWeight: FontWeight.bold,
+            color: Colors.black,
+          ),
         ),
-        automaticallyImplyLeading: false,
         centerTitle: true,
+        backgroundColor: Colors.white,
+        elevation: 1,
       ),
       body: Padding(
         padding: const EdgeInsets.all(16.0),
         child: Form(
           key: _formKey,
-          child: Padding(
-            padding: const EdgeInsets.all(8.0),
-            child: ListView(
-              children: [
-                TextFormField(
-                  controller: _productNameController,
-                  decoration: InputDecoration(labelText: 'Product Name'),
-                  validator: (value) =>
-                      value!.isEmpty ? 'Please enter product name' : null,
+          child: ListView(
+            children: [
+              _buildTextField(
+                controller: _productNameController,
+                label: 'Product Name',
+                icon: Icons.card_giftcard,
+              ),
+              const SizedBox(height: 10),
+              _buildTextField(
+                controller: _productDescriptionController,
+                label: 'Product Description',
+                icon: Icons.description,
+                maxLines: 3,
+              ),
+              const SizedBox(height: 10),
+              _buildTextField(
+                controller: _quantityController,
+                label: 'Quantity',
+                icon: Icons.numbers,
+                keyboardType: TextInputType.number,
+              ),
+              const SizedBox(height: 10),
+              _buildTextField(
+                controller: _phoneController,
+                label: 'Phone Number',
+                icon: Icons.phone,
+                keyboardType: TextInputType.phone,
+                validator: (value) {
+                  if (value == null || value.isEmpty) {
+                    return 'Please enter the phone number';
+                  }
+
+                  if (value.length < 10) return 'Enter a valid phone number';
+                  return null;
+                },
+              ),
+              const SizedBox(height: 20),
+              ElevatedButton(
+                onPressed: _submitRequest,
+                style: ElevatedButton.styleFrom(
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  backgroundColor: Colors.black,
+                  foregroundColor: Colors.white,
                 ),
-                SizedBox(height: 10),
-                TextFormField(
-                  controller: _productDescriptionController,
-                  decoration: InputDecoration(labelText: 'Product Description'),
-                  maxLines: 3,
-                  validator: (value) => value!.isEmpty
-                      ? 'Please enter product description'
-                      : null,
+                child: Text(
+                  'Submit Donation Request',
+                  style: GoogleFonts.poppins(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
+                  ),
                 ),
-                SizedBox(height: 10),
-                TextFormField(
-                  controller: _quantityController,
-                  decoration: InputDecoration(labelText: 'Quantity'),
-                  keyboardType: TextInputType.number,
-                  validator: (value) =>
-                      value!.isEmpty ? 'Enter quantity' : null,
-                ),
-                SizedBox(height: 10),
-                TextFormField(
-                    controller: _phoneController,
-                    decoration: InputDecoration(labelText: 'Phone Number'),
-                    validator: (value) {
-                      if (value == null || value.isEmpty) {
-                        return "Please Enter the number";
-                      }
-                      String pattern = r'^\+?[0-9]{10,12}$';
-                      RegExp regExp = RegExp(pattern);
-                      if (!RegExp(pattern).hasMatch(value)) {
-                        return 'enter a valid Phone Number';
-                      }
-                    }),
-                SizedBox(height: 20),
-                ElevatedButton(
-                  onPressed: _submitRequest,
-                  child: Text('Submit Donation Request'),
-                ),
-              ],
-            ),
+              ),
+            ],
           ),
         ),
       ),
@@ -146,4 +157,29 @@ class _VendorCharityPageState extends State<VendorCharityPage> {
     _phoneController.dispose();
     super.dispose();
   }
+}
+
+Widget _buildTextField({
+  required TextEditingController controller,
+  required String label,
+  required IconData icon,
+  int maxLines = 1,
+  TextInputType keyboardType = TextInputType.text,
+  String? Function(String?)? validator,
+}) {
+  return TextFormField(
+    controller: controller,
+    keyboardType: keyboardType,
+    maxLines: maxLines,
+    decoration: InputDecoration(
+      labelText: label,
+      prefixIcon: Icon(icon, color: Colors.black),
+      border: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(10),
+      ),
+      filled: true,
+      fillColor: Colors.white,
+    ),
+    validator: validator,
+  );
 }

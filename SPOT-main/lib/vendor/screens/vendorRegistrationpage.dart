@@ -1,8 +1,7 @@
-
-
 import 'dart:convert';
 import 'dart:io';
 import 'package:flutter_map/flutter_map.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -202,40 +201,76 @@ class _VendorRegistrationpageState extends State<VendorRegistrationpage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Shop Registration'),
+        title: Text(
+          'Shop Registration',
+          style: GoogleFonts.poppins(
+            fontSize: 20,
+            fontWeight: FontWeight.w600,
+            color: Colors.black,
+          ),
+        ),
         centerTitle: true,
+        backgroundColor: Colors.white,
+        elevation: 1,
+        iconTheme: const IconThemeData(color: Colors.black),
       ),
-      backgroundColor: Colors.white,
+      backgroundColor: Colors.grey[100],
       body: Center(
         child: SingleChildScrollView(
+          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 20),
           child: Form(
             key: _formKey,
             child: Column(
+              crossAxisAlignment: CrossAxisAlignment.center,
               children: [
                 GestureDetector(
                   onTap: _pickImage,
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 20),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(vertical: 10),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(12),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black12,
+                          blurRadius: 4,
+                          spreadRadius: 2,
+                          offset: const Offset(2, 2),
+                        )
+                      ],
+                    ),
                     child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
                       children: [
                         CircleAvatar(
-                          radius: 20,
+                          radius: 30,
                           backgroundColor: Colors.grey.shade300,
                           backgroundImage:
                               _image != null ? FileImage(_image!) : null,
                           child: _image == null
-                              ? Icon(Icons.person,
-                                  size: 20, color: Colors.grey.shade600)
+                              ? Icon(Icons.camera_alt,
+                                  size: 30, color: Colors.grey.shade600)
                               : null,
                         ),
-                        const Text('     Please upload an image')
+                        const SizedBox(width: 15),
+                        Text(
+                          'Upload Shop Image',
+                          style: GoogleFonts.poppins(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w500,
+                            color: Colors.black87,
+                          ),
+                        ),
                       ],
                     ),
                   ),
                 ),
-                const SizedBox(height: 20),
+                const SizedBox(height: 25),
                 _buildTextFormField(
-                    _nameController, 'Shop name', TextInputType.text),
+                  _nameController,
+                  'Shop Name',
+                  TextInputType.text,
+                ),
                 _buildTextFormField(
                   _emailController,
                   'Email',
@@ -244,61 +279,106 @@ class _VendorRegistrationpageState extends State<VendorRegistrationpage> {
                     if (value == null || value.isEmpty) {
                       return 'Email is required';
                     }
-
-                    // Enforce email to have a standard length for the local part (1 to 30 characters) and end with "@gmail.com"
                     String pattern = r'^[a-zA-Z0-9._%+-]{1,30}@gmail\.com$';
                     RegExp regex = RegExp(pattern);
-
                     if (!regex.hasMatch(value)) {
-                      return 'Please enter a valid @gmail.com email (1 to 30 characters before @)';
+                      return 'Enter a valid @gmail.com email (1 to 30 characters before @)';
                     }
-
                     return null;
                   },
                 ),
                 _buildTextFormField(
-                    _numberController, 'Phone Number', TextInputType.phone,
-                    validator: (value) {
-                  if (value == null || value.isEmpty)
-                    return 'Please enter Phone Number';
-                  if (value.length < 10) return 'Enter a valid phone number';
-                  return null;
-                }),
-                _buildTextFormField(
-                    _categoryController, 'Category', TextInputType.text),
-                _buildTextFormField(
-                    _locationController, 'Address', TextInputType.text),
-                _buildTextFormField(_descriptionController, 'Description',
-                    TextInputType.multiline,),
-                    
-                Text(
-                  "Selected Location: \nLatitude: ${selectedLocation.latitude}, Longitude: ${selectedLocation.longitude}",
-                  style: const TextStyle(
-                      fontSize: 14, fontWeight: FontWeight.w500),
-                  textAlign: TextAlign.center,
+                  _numberController,
+                  'Phone Number',
+                  TextInputType.phone,
+                  validator: (value) {
+                    if (value == null || value.isEmpty)
+                      return 'Please enter Phone Number';
+                    if (value.length < 10) return 'Enter a valid phone number';
+                    return null;
+                  },
                 ),
-                ElevatedButton(
+                _buildTextFormField(
+                  _categoryController,
+                  'Category',
+                  TextInputType.text,
+                ),
+                _buildTextFormField(
+                  _locationController,
+                  'Address',
+                  TextInputType.text,
+                ),
+                _buildTextFormField(
+                  _descriptionController,
+                  'Description',
+                  TextInputType.multiline,
+                ),
+                const SizedBox(height: 10),
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: Colors.blue.shade50,
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Column(
+                    children: [
+                      Text(
+                        "Selected Location:",
+                        style: GoogleFonts.poppins(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w600,
+                          color: Colors.black87,
+                        ),
+                      ),
+                      const SizedBox(height: 5),
+                      Text(
+                        "Latitude: ${selectedLocation.latitude}, Longitude: ${selectedLocation.longitude}",
+                        style: GoogleFonts.poppins(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w500,
+                          color: Colors.black54,
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 15),
+                ElevatedButton.icon(
                   onPressed: _selectLocation,
-                  child: const Text('Select Location'),
+                  icon: const Icon(Icons.location_on, color: Colors.white),
+                  label: const Text('Select Location'),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.redAccent,
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 20, vertical: 12),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
                 ),
+                const SizedBox(height: 15),
                 ElevatedButton(
                   onPressed: () async {
                     if (_formKey.currentState!.validate()) {
                       final user = FirebaseAuth.instance.currentUser;
                       if (user == null) {
-                        ScaffoldMessenger.of(context)
-                            .showSnackBar(const SnackBar(
-                          content: Text("Please log in to save your profile"),
-                        ));
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text("Please log in to save your profile"),
+                          ),
+                        );
                         return;
                       }
 
                       String? imageUrl = await _uploadToCloudinary();
-
                       if (imageUrl == null) {
                         ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(
-                                content: Text("Failed to upload image")));
+                          const SnackBar(
+                            content: Text("Failed to upload image"),
+                          ),
+                        );
                         return;
                       }
 
@@ -321,24 +401,38 @@ class _VendorRegistrationpageState extends State<VendorRegistrationpage> {
                         }, SetOptions(merge: true));
 
                         ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(
-                                content: Text("Profile saved successfully!")));
+                          const SnackBar(
+                            content: Text("Profile saved successfully!"),
+                          ),
+                        );
                         Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                                builder: (context) => VendorBottomNavbar()));
+                          context,
+                          MaterialPageRoute(
+                              builder: (context) => VendorBottomNavbar()),
+                        );
                       } catch (e) {
-                        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-                            content: Text("Failed to save profile: $e")));
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text("Failed to save profile: $e"),
+                          ),
+                        );
                       }
                     }
                   },
-                  child: const Text('Create Shop'),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: Colors.blueAccent,
                     foregroundColor: Colors.white,
-                    elevation: 5,
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 40, vertical: 12),
+                    textStyle: GoogleFonts.poppins(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600,
+                    ),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
                   ),
+                  child: const Text('Create Shop'),
                 ),
               ],
             ),

@@ -21,118 +21,243 @@ class _CharityReadState extends State<CharityRead> {
         .where('userId', isEqualTo: currentUser?.uid);
 
     return Scaffold(
-      backgroundColor: Colors.grey[100],
       appBar: AppBar(
         title: Text(
-          'Charity',
+          'Donations',
+          style: GoogleFonts.poppins(
+            fontWeight: FontWeight.w600,
+            fontSize: 22,
+            color: Colors.white,
+          ),
         ),
-        automaticallyImplyLeading: false,
-        centerTitle: true,
-        backgroundColor: Colors.white,
+        backgroundColor: Colors.transparent,
       ),
-      body: currentUser == null
-          ? const Center(child: Text('Please login to view your requests'))
-          : StreamBuilder(
-              stream: charityReq.snapshots(),
-              builder: (context, AsyncSnapshot snapshot) {
-                if (snapshot.connectionState == ConnectionState.waiting) {
-                  return const Center(child: CircularProgressIndicator());
-                }
+      extendBodyBehindAppBar: true,
+      body: Container(
+        decoration: const BoxDecoration(
+          gradient: LinearGradient(
+            colors: [Color(0xFF053E51), Color(0xFF2E8B57)],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ),
+        ),
+        child: currentUser == null
+            ? const Center(
+                child: Text(
+                  'Please login to view your requests',
+                  style: TextStyle(color: Colors.white),
+                ),
+              )
+            : StreamBuilder(
+                stream: charityReq.snapshots(),
+                builder: (context, AsyncSnapshot snapshot) {
+                  if (snapshot.connectionState == ConnectionState.waiting) {
+                    return const Center(
+                        child: CircularProgressIndicator(color: Colors.white));
+                  }
 
-                if (snapshot.hasError) {
-                  return Center(
-                      child: Text('Error: ${snapshot.error.toString()}'));
-                }
+                  if (snapshot.hasError) {
+                    return Center(
+                        child: Text(
+                      'Error: ${snapshot.error.toString()}',
+                      style: const TextStyle(color: Colors.white),
+                    ));
+                  }
 
-                if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
-                  return const Center(
-                      child: Text('You have no charity requests'));
-                }
+                  if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
+                    return const Center(
+                        child: Text(
+                      'You have no charity requests',
+                      style: TextStyle(color: Colors.white),
+                    ));
+                  }
 
-                return ListView.builder(
-                  padding: const EdgeInsets.all(12.0),
-                  itemCount: snapshot.data!.docs.length,
-                  itemBuilder: (context, index) {
-                    final DocumentSnapshot charitySnap =
-                        snapshot.data.docs[index];
-                    final String docId = charitySnap.id;
-
-                    return Card(
-                      elevation: 4,
-                      margin: const EdgeInsets.symmetric(vertical: 12),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(16),
+                  return Padding(
+                    padding: const EdgeInsets.only(top: 100),
+                    child: ListView.builder(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 45.0,
                       ),
-                      child: Padding(
-                        padding: const EdgeInsets.all(16.0),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Row(
-                              children: [
-                                const Icon(
-                                  Icons.volunteer_activism,
-                                  color: Color.fromARGB(255, 5, 62, 81),
-                                ),
-                                const SizedBox(width: 8),
-                                Text(
-                                  charitySnap['P_name'],
-                                  style: GoogleFonts.roboto(
-                                    fontSize: 15,
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                ),
-                              ],
-                            ),
-                            const SizedBox(height: 8),
-                            Text(
-                              charitySnap['P_description'],
-                              style: GoogleFonts.roboto(fontSize: 16),
-                            ),
-                            const SizedBox(height: 8),
-                            Text(
-                              'Contact Number : ${charitySnap['phone']}',
-                              style: GoogleFonts.roboto(
-                                  fontSize: 16, fontWeight: FontWeight.w500),
-                            ),
-                            const SizedBox(height: 8),
-                            Text(
-                              'Quantity: ${charitySnap['quantity']}',
-                              style: GoogleFonts.roboto(
-                                fontSize: 16,
-                                fontWeight: FontWeight.w500,
+                      itemCount: snapshot.data!.docs.length,
+                      itemBuilder: (context, index) {
+                        final DocumentSnapshot charitySnap =
+                            snapshot.data.docs[index];
+                        final String docId = charitySnap.id;
+
+                        return SingleChildScrollView(
+                            child: Card(
+                          elevation: 8,
+                          margin: const EdgeInsets.symmetric(
+                              vertical: 8, horizontal: 1),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(16),
+                          ),
+                          child: Container(
+                            decoration: BoxDecoration(
+                              borderRadius: BorderRadius.circular(16),
+                              gradient: LinearGradient(
+                                begin: Alignment.topLeft,
+                                end: Alignment.bottomRight,
+                                colors: [
+                                  Colors.white,
+                                  Colors.grey.shade50,
+                                ],
                               ),
                             ),
-                            const SizedBox(height: 16),
-                            Row(
-                              mainAxisAlignment: MainAxisAlignment.end,
+                            child: Stack(
                               children: [
-                                ElevatedButton.icon(
-                                  onPressed: () => _confirmDelete(docId),
-                                  style: ElevatedButton.styleFrom(
-                                    backgroundColor: Colors.redAccent,
-                                    shape: RoundedRectangleBorder(
-                                      borderRadius: BorderRadius.circular(8),
+                                // Delete Button
+                                Positioned(
+                                  top: 0,
+                                  right: 0,
+                                  child: Material(
+                                    color: Colors.transparent,
+                                    child: InkWell(
+                                      onTap: () => _confirmDelete(docId),
+                                      borderRadius: const BorderRadius.only(
+                                        topRight: Radius.circular(16),
+                                        bottomLeft: Radius.circular(12),
+                                      ),
+                                      child: Container(
+                                        padding: const EdgeInsets.all(8),
+                                        decoration: BoxDecoration(
+                                          color: Colors.red.withOpacity(0.1),
+                                          borderRadius: const BorderRadius.only(
+                                            topRight: Radius.circular(16),
+                                            bottomLeft: Radius.circular(12),
+                                          ),
+                                        ),
+                                        child: Icon(
+                                          Icons.close,
+                                          size: 20,
+                                          color: Colors.red.shade600,
+                                        ),
+                                      ),
                                     ),
                                   ),
-                                  label: const Text(
-                                    'delete',
-                                    style: TextStyle(color: Colors.white),
+                                ),
+
+                                // Card Content
+                                Padding(
+                                  padding: const EdgeInsets.all(16),
+                                  child: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      // Title Row
+                                      Row(
+                                        children: [
+                                          Container(
+                                            padding: const EdgeInsets.all(8),
+                                            decoration: BoxDecoration(
+                                              color: Color(0xFF053E51)
+                                                  .withOpacity(0.1),
+                                              borderRadius:
+                                                  BorderRadius.circular(8),
+                                            ),
+                                            child: const Icon(
+                                              Icons.volunteer_activism,
+                                              color: Color(0xFF053E51),
+                                              size: 20,
+                                            ),
+                                          ),
+                                          const SizedBox(width: 12),
+                                          Expanded(
+                                            child: Text(
+                                              charitySnap['P_name'],
+                                              style: GoogleFonts.poppins(
+                                                fontSize: 16,
+                                                fontWeight: FontWeight.w600,
+                                                color: Color(0xFF053E51),
+                                              ),
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+
+                                      const SizedBox(height: 12),
+
+                                      // Description
+                                      Text(
+                                        charitySnap['P_description'],
+                                        style: GoogleFonts.poppins(
+                                          fontSize: 14,
+                                          color: Colors.black87,
+                                          height: 1.4,
+                                        ),
+                                        maxLines: 2,
+                                        overflow: TextOverflow.ellipsis,
+                                      ),
+
+                                      const SizedBox(height: 12),
+
+                                      // Info Row
+                                      Row(
+                                        children: [
+                                          // Contact Info
+                                          Expanded(
+                                            child: Row(
+                                              children: [
+                                                Icon(
+                                                  Icons.phone,
+                                                  color: Colors.blue.shade700,
+                                                  size: 16,
+                                                ),
+                                                const SizedBox(width: 6),
+                                                Expanded(
+                                                  child: Text(
+                                                    charitySnap['phone'],
+                                                    style: GoogleFonts.poppins(
+                                                      fontSize: 13,
+                                                      fontWeight:
+                                                          FontWeight.w500,
+                                                      color:
+                                                          Colors.blue.shade700,
+                                                    ),
+                                                  ),
+                                                ),
+                                              ],
+                                            ),
+                                          ),
+
+                                          const SizedBox(width: 16),
+
+                                          // Quantity Info
+                                          Row(
+                                            children: [
+                                              Icon(
+                                                Icons.inventory_2,
+                                                color: Colors.green.shade700,
+                                                size: 16,
+                                              ),
+                                              const SizedBox(width: 6),
+                                              Text(
+                                                '${charitySnap['quantity']} items',
+                                                style: GoogleFonts.poppins(
+                                                  fontSize: 13,
+                                                  fontWeight: FontWeight.w500,
+                                                  color: Colors.green.shade700,
+                                                ),
+                                              ),
+                                            ],
+                                          ),
+                                        ],
+                                      ),
+                                    ],
                                   ),
                                 ),
                               ],
                             ),
-                          ],
-                        ),
-                      ),
-                    );
-                  },
-                );
-              },
-            ),
+                          ),
+                        ));
+                      },
+                    ),
+                  );
+                },
+              ),
+      ),
       floatingActionButton: FloatingActionButton(
         onPressed: () {
-          // Navigate to a new page to add charity request
           Navigator.push(
             context,
             MaterialPageRoute(
@@ -140,8 +265,35 @@ class _CharityReadState extends State<CharityRead> {
             ),
           );
         },
-        backgroundColor: Color.fromARGB(255, 5, 62, 81),
-        child: const Icon(Icons.add, color: Colors.white),
+        backgroundColor: Colors.white,
+        child: const Icon(Icons.add, color: Color(0xFF2E8B57)),
+      ),
+    );
+  }
+
+  // Function to create a gradient button
+  Widget _gradientButton(
+      String text, Color startColor, Color endColor, VoidCallback onTap) {
+    return InkWell(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 20),
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            colors: [startColor, endColor],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ),
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: Text(
+          text,
+          style: GoogleFonts.poppins(
+            fontSize: 16,
+            fontWeight: FontWeight.w500,
+            color: Colors.white,
+          ),
+        ),
       ),
     );
   }
@@ -153,21 +305,17 @@ class _CharityReadState extends State<CharityRead> {
         return AlertDialog(
           title: const Text('Confirm Delete'),
           content: const Text('Are you sure you want to delete this request?'),
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(context),
               child: const Text('Cancel'),
             ),
-            ElevatedButton(
-              onPressed: () {
-                _deleteRequest(docId);
-                Navigator.pop(context);
-              },
-              style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color.fromARGB(255, 232, 37, 7)),
-              child:
-                  const Text('Delete', style: TextStyle(color: Colors.white)),
-            ),
+            _gradientButton("Delete", Colors.red, Colors.pinkAccent, () {
+              _deleteRequest(docId);
+              Navigator.pop(context);
+            }),
           ],
         );
       },

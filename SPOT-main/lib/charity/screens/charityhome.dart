@@ -1,4 +1,3 @@
-
 import 'package:awesome_notifications/awesome_notifications.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -13,10 +12,11 @@ class CharityHome extends StatefulWidget {
 }
 
 class _CharityHomeState extends State<CharityHome> {
+  List<String> removedRequests = [];
+
   @override
   void initState() {
     super.initState();
-    // Check user role before setting up notification listener
     _checkRoleAndSetupNotifications();
   }
 
@@ -43,18 +43,14 @@ class _CharityHomeState extends State<CharityHome> {
       final currentUser = FirebaseAuth.instance.currentUser;
       if (currentUser == null) return;
 
-      // Get user role
       final userDoc = await FirebaseFirestore.instance
           .collection('CV_users')
           .doc(currentUser.uid)
           .get();
 
-      // Only proceed if user is a charity
       if (userDoc.exists && userDoc.data()?['role'] == 'charity') {
         for (var doc in snapshot.docs) {
           _triggerNotification(doc['P_name']);
-
-          // Remove notification flag after processing
           await FirebaseFirestore.instance
               .collection('Charity_req')
               .doc(doc.id)
@@ -75,6 +71,47 @@ class _CharityHomeState extends State<CharityHome> {
     );
   }
 
+  Future<String> _fetchVendorName(String vendorId) async {
+    final vendorDoc = await FirebaseFirestore.instance
+        .collection('CV_users')
+        .doc(vendorId)
+        .get();
+    return vendorDoc['name'];
+  }
+
+  void _acceptRequest(String docId, String vendorId, String productName) async {
+    final vendorName = await _fetchVendorName(vendorId);
+    AwesomeNotifications().createNotification(
+      content: NotificationContent(
+        id: 20,
+        channelKey: 'spot',
+        title: 'Request Accepted',
+        body: 'Your donation request for $productName has been accepted.',
+      ),
+    );
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content:
+            Text('Donation request from $vendorName accepted successfully!'),
+        backgroundColor: Colors.green,
+      ),
+    );
+
+    setState(() {
+      removedRequests.add(docId);
+    });
+  }
+
+  void _rejectRequest(String docId) {
+    setState(() {
+      removedRequests.add(docId);
+    });
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Donation request removed from your list.')),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final CollectionReference charityReq =
@@ -92,54 +129,93 @@ class _CharityHomeState extends State<CharityHome> {
               itemCount: snapshot.data!.docs.length,
               itemBuilder: (context, index) {
                 final DocumentSnapshot charitySnap = snapshot.data.docs[index];
-                return Card(
-                  elevation: 4,
-                  margin: const EdgeInsets.symmetric(vertical: 10),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(16),
-                  ),
-                  child: Padding(
-                    padding: const EdgeInsets.all(16.0),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Row(
+                if (removedRequests.contains(charitySnap.id)) {
+                  return const SizedBox.shrink();
+                }
+                return FutureBuilder<String>(
+                  future: _fetchVendorName(charitySnap['userId']),
+                  builder: (context, vendorSnapshot) {
+                    String vendorName = vendorSnapshot.data ?? 'Loading...';
+                    return Card(
+                      elevation: 4,
+                      margin: const EdgeInsets.symmetric(vertical: 10),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(16),
+                      ),
+                      child: Padding(
+                        padding: const EdgeInsets.all(16.0),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            const Icon(Icons.volunteer_activism,
-                                color: Colors.green),
-                            const SizedBox(width: 8),
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                Row(
+                                  children: [
+                                    const Icon(Icons.volunteer_activism,
+                                        color: Colors.green),
+                                    const SizedBox(width: 8),
+                                    Text(
+                                      charitySnap['P_name'],
+                                      style: GoogleFonts.roboto(
+                                        fontSize: 20,
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                                IconButton(
+                                  icon: const Icon(Icons.close,
+                                      color: Colors.red, size: 28),
+                                  onPressed: () =>
+                                      _rejectRequest(charitySnap.id),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 8),
                             Text(
-                              charitySnap['P_name'],
+                              'Vendor: $vendorName',
                               style: GoogleFonts.roboto(
-                                fontSize: 20,
+                                fontSize: 16,
                                 fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                            const SizedBox(height: 8),
+                            Text(
+                              charitySnap['P_description'],
+                              style: GoogleFonts.roboto(fontSize: 16),
+                            ),
+                            const SizedBox(height: 8),
+                            Text(
+                              'Contact Number : ${charitySnap['phone']}',
+                              style: GoogleFonts.roboto(
+                                  fontSize: 16, fontWeight: FontWeight.w500),
+                            ),
+                            const SizedBox(height: 8),
+                            Text(
+                              'Quantity: ${charitySnap['quantity']}',
+                              style: GoogleFonts.roboto(
+                                fontSize: 16,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                            const SizedBox(height: 16),
+                            Center(
+                              child: IconButton(
+                                icon: const Icon(Icons.check_circle,
+                                    color: Colors.green, size: 32),
+                                onPressed: () => _acceptRequest(
+                                  charitySnap.id,
+                                  charitySnap['userId'],
+                                  charitySnap['P_name'],
+                                ),
                               ),
                             ),
                           ],
                         ),
-                        const SizedBox(height: 8),
-                        Text(
-                          charitySnap['P_description'],
-                          style: GoogleFonts.roboto(fontSize: 16),
-                        ),
-                        const SizedBox(height: 8),
-                        Text(
-                          'Contact Number : ${charitySnap['phone']}',
-                          style: GoogleFonts.roboto(
-                              fontSize: 16, fontWeight: FontWeight.w500),
-                        ),
-                        const SizedBox(height: 8),
-                        Text(
-                          'Quantity: ${charitySnap['quantity']}',
-                          style: GoogleFonts.roboto(
-                            fontSize: 16,
-                            fontWeight: FontWeight.w500,
-                          ),
-                        ),
-                        const SizedBox(height: 16),
-                      ],
-                    ),
-                  ),
+                      ),
+                    );
+                  },
                 );
               },
             );

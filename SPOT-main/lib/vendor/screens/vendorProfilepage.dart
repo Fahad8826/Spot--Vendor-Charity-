@@ -4,12 +4,12 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+
 import 'package:image_picker/image_picker.dart';
 import 'package:spot/Firbase/auth_service.dart';
 import 'package:http/http.dart' as http;
+import 'package:spot/charity/screens/charityProfile.dart';
 import 'package:spot/vendor/authentication/login.dart';
-import 'package:spot/vendor/screens/chatscreen.dart';
-import 'package:spot/vendor/screens/vendorReport.dart';
 
 class VendorProfilePage extends StatefulWidget {
   const VendorProfilePage({super.key});
@@ -238,28 +238,17 @@ class _VendorProfilePageState extends State<VendorProfilePage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text(
-          'Profile',
-        ),
-        centerTitle: true,
-        automaticallyImplyLeading: false,
+        title: Text('Profile',
+            style: GoogleFonts.poppins(fontWeight: FontWeight.w600)),
         actions: [
           IconButton(
-            onPressed: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => ShopAnalyticsDashboard(),
-                ),
-              );
-            },
-            icon: const Icon(Icons.auto_graph_outlined),
-          ),
-          IconButton(
-            onPressed: _showLogoutDialog,
-            icon: const Icon(Icons.logout),
-          ),
+              onPressed: () {
+                _showLogoutDialog();
+              },
+              icon: Icon(Icons.logout))
         ],
+        centerTitle: true,
+        automaticallyImplyLeading: false,
       ),
       backgroundColor: Colors.white,
       body: _isSaving
@@ -308,252 +297,292 @@ class _VendorProfilePageState extends State<VendorProfilePage> {
   }
 
   Widget _buildProfileContent(Map<String, dynamic> user) {
-    return Padding(
-      padding: const EdgeInsets.all(16.0),
+    return SingleChildScrollView(
       child: Form(
         key: _formKey,
-        child: SingleChildScrollView(
-          child: Column(
-            children: [
-              Stack(
+        child: Column(
+          children: [
+            // Profile Image Section
+            Container(
+              padding: const EdgeInsets.symmetric(vertical: 32),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.grey.withOpacity(0.1),
+                    spreadRadius: 1,
+                    blurRadius: 10,
+                  ),
+                ],
+              ),
+              child: Stack(
                 alignment: Alignment.center,
                 children: [
                   Container(
-                    width: 160,
-                    height: 160,
+                    width: 180,
+                    height: 180,
                     decoration: BoxDecoration(
-                      color: Colors.grey[200],
-                      image: _image != null
-                          ? DecorationImage(
-                              image: FileImage(_image!),
-                              fit: BoxFit.cover,
-                            )
-                          : (_imageUrl != null && _imageUrl!.isNotEmpty
-                              ? DecorationImage(
-                                  image: NetworkImage(_imageUrl!),
-                                  fit: BoxFit.cover,
-                                )
-                              : null),
-                      borderRadius: BorderRadius.circular(10),
+                      shape: BoxShape.circle,
+                      border: Border.all(color: Colors.white, width: 4),
                       boxShadow: [
                         BoxShadow(
                           color: Colors.black.withOpacity(0.2),
                           spreadRadius: 2,
-                          blurRadius: 5,
-                          offset: const Offset(0, 3),
+                          blurRadius: 15,
+                          offset: const Offset(0, 5),
                         ),
                       ],
                     ),
-                    child: _imageUrl == null && _image == null
-                        ? const Icon(Icons.person, size: 80)
-                        : null,
+                    child: ClipOval(
+                      child: _image != null
+                          ? Image.file(_image!, fit: BoxFit.cover)
+                          : (_imageUrl != null && _imageUrl!.isNotEmpty
+                              ? Image.network(_imageUrl!, fit: BoxFit.cover)
+                              : Container(
+                                  color: Colors.grey[200],
+                                  child: Icon(
+                                    Icons.store_rounded,
+                                    size: 80,
+                                    color: Colors.grey[400],
+                                  ),
+                                )),
+                    ),
                   ),
                   if (_isEditing)
                     Positioned(
                       bottom: 0,
-                      right: 0,
-                      child: CircleAvatar(
-                        backgroundColor: Colors.white,
+                      right: 80,
+                      child: Container(
+                        decoration: BoxDecoration(
+                          color: Theme.of(context).primaryColor,
+                          shape: BoxShape.circle,
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withOpacity(0.2),
+                              spreadRadius: 2,
+                              blurRadius: 5,
+                            ),
+                          ],
+                        ),
                         child: IconButton(
-                          icon: const Icon(Icons.edit),
+                          icon:
+                              const Icon(Icons.camera_alt, color: Colors.white),
                           onPressed: _pickImage,
-                          color: Colors.black,
                         ),
                       ),
                     ),
                 ],
               ),
-              const SizedBox(height: 20),
-              _buildValidatedTextField(
-                controller: _nameController,
-                hint: 'Shop Name',
-                icon: Icons.storefront,
-                validator: (value) {
-                  if (value == null || value.isEmpty) {
-                    return 'Shop name is required';
-                  }
-                  if (value.length < 3) {
-                    return 'Shop name must be at least 3 characters';
-                  }
-                  return null;
-                },
-              ),
-              _buildValidatedTextField(
-                  controller: _emailController,
-                  hint: 'Email',
-                  icon: Icons.email,
-                  keyboardType: TextInputType.emailAddress,
-                  validator: (value) {
-                    if (value == null || value.isEmpty) {
-                      return 'Email is Empty';
-                    }
-                    String Pattern = r'^[a-zA-Z0-9._%+-]{1,30}@gmail\.com$';
-                    RegExp regex = RegExp(Pattern);
-                    if (!regex.hasMatch(value)) {
-                      return 'Please enter a valid @gmail.com email (1 to 30 characters before @)';
-                    }
-                    return null;
-                  }),
-              _buildValidatedTextField(
-                controller: _numberController,
-                hint: 'Phone Number',
-                icon: Icons.phone,
-                keyboardType: TextInputType.phone,
-                validator: (value) {
-                  if (value == null || value.isEmpty) {
-                    return 'Phone number is required';
-                  }
+            ),
 
-                  if (!RegExp(_phonePattern).hasMatch(value)) {
-                    return 'Please enter a valid phone number (10-12 digits)';
-                  }
-                  return null;
-                },
-              ),
-              _buildValidatedTextField(
-                controller: _categoryController,
-                hint: 'Business Category',
-                icon: Icons.category,
-                validator: (value) {
-                  if (value == null || value.isEmpty) {
-                    return 'Business category is required';
-                  }
-                  return null;
-                },
-              ),
-              _buildValidatedTextField(
-                controller: _descriptionController,
-                hint: 'Business Description',
-                icon: Icons.description,
-                maxLines: 3,
-                validator: (value) {
-                  if (value == null || value.isEmpty) {
-                    return 'Description is required';
-                  }
-                  if (value.length < 10) {
-                    return 'Description must be at least 10 characters';
-                  }
-                  return null;
-                },
-              ),
-              _buildValidatedTextField(
-                controller: _locationController,
-                hint: 'Business Location',
-                icon: Icons.location_on,
-                validator: (value) {
-                  if (value == null || value.isEmpty) {
-                    return 'Location is required';
-                  }
-                  return null;
-                },
-              ),
-              const SizedBox(height: 24),
-              SizedBox(
-                width: double.infinity,
-                child: ElevatedButton(
-                  onPressed: _isEditing
-                      ? _updateUserData
-                      : () => setState(() => _isEditing = true),
-                  style: ElevatedButton.styleFrom(
-                    foregroundColor: Colors.white,
-                    backgroundColor: _isEditing
-                        ? Colors.green
-                        : const Color.fromARGB(255, 8, 43, 72),
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 30, vertical: 15),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(20),
-                    ),
-                    elevation: 5,
+            // Form Fields Section
+            Padding(
+              padding: const EdgeInsets.all(24.0),
+              child: Column(
+                children: [
+                  _buildField(
+                    controller: _nameController,
+                    label: 'Shop Name',
+                    icon: Icons.storefront,
+                    validator: (value) {
+                      if (value == null || value.isEmpty) {
+                        return 'Shop name is required';
+                      }
+                      if (value.length < 3) {
+                        return 'Shop name must be at least 3 characters';
+                      }
+                      return null;
+                    },
                   ),
-                  child: Text(
-                    _isEditing ? 'Save Changes' : 'Edit Profile',
-                    style: const TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
-                    ),
+                  const SizedBox(height: 20),
+                  _buildField(
+                    controller: _emailController,
+                    label: 'Email Address',
+                    icon: Icons.email_outlined,
+                    keyboardType: TextInputType.emailAddress,
+                    validator: (value) {
+                      if (value == null || value.isEmpty) {
+                        return 'Email is required';
+                      }
+                      String pattern = r'^[a-zA-Z0-9._%+-]{1,30}@gmail\.com$';
+                      RegExp regex = RegExp(pattern);
+                      if (!regex.hasMatch(value)) {
+                        return 'Please enter a valid @gmail.com email';
+                      }
+                      return null;
+                    },
                   ),
-                ),
+                  const SizedBox(height: 20),
+                  _buildField(
+                    controller: _numberController,
+                    label: 'Phone Number',
+                    icon: Icons.phone_outlined,
+                    keyboardType: TextInputType.phone,
+                    validator: (value) {
+                      if (value == null || value.isEmpty) {
+                        return 'Phone number is required';
+                      }
+                      if (!RegExp(_phonePattern).hasMatch(value)) {
+                        return 'Please enter a valid phone number';
+                      }
+                      return null;
+                    },
+                  ),
+                  const SizedBox(height: 20),
+                  _buildField(
+                    controller: _categoryController,
+                    label: 'Business Category',
+                    icon: Icons.category_outlined,
+                    validator: (value) {
+                      if (value == null || value.isEmpty) {
+                        return 'Business category is required';
+                      }
+                      return null;
+                    },
+                  ),
+                  const SizedBox(height: 20),
+                  _buildField(
+                    controller: _descriptionController,
+                    label: 'Business Description',
+                    icon: Icons.description_outlined,
+                    maxLines: 3,
+                    validator: (value) {
+                      if (value == null || value.isEmpty) {
+                        return 'Description is required';
+                      }
+                      if (value.length < 10) {
+                        return 'Description must be at least 10 characters';
+                      }
+                      return null;
+                    },
+                  ),
+                  const SizedBox(height: 20),
+                  _buildField(
+                    controller: _locationController,
+                    label: 'Business Location',
+                    icon: Icons.location_on_outlined,
+                    validator: (value) {
+                      if (value == null || value.isEmpty) {
+                        return 'Location is required';
+                      }
+                      return null;
+                    },
+                  ),
+                  const SizedBox(height: 32),
+                  _buildActionButton(),
+                ],
               ),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
     );
   }
 
-  Widget _buildValidatedTextField({
+  Widget _buildField({
     required TextEditingController controller,
-    required String hint,
+    required String label,
     required IconData icon,
-    required String? Function(String?) validator,
+    int? maxLines = 1,
     TextInputType? keyboardType,
-    int maxLines = 1,
+    String? Function(String?)? validator,
   }) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 20),
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.grey.withOpacity(0.1),
+            spreadRadius: 1,
+            blurRadius: 10,
+          ),
+        ],
+      ),
       child: TextFormField(
-        readOnly: !_isEditing,
         controller: controller,
-        validator: _isEditing ? validator : null,
-        keyboardType: keyboardType,
+        enabled: _isEditing,
         maxLines: maxLines,
+        keyboardType: keyboardType,
+        validator: validator,
+        style: TextStyle(
+          color: Colors.grey[800],
+          fontSize: 16,
+        ),
         decoration: InputDecoration(
+          labelText: label,
+          labelStyle: TextStyle(
+            color: Colors.black,
+            fontSize: 14,
+          ),
+          prefixIcon: Icon(icon, color: Theme.of(context).primaryColor),
           border: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(15),
-            borderSide: const BorderSide(),
-          ),
-          enabledBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(15),
-            borderSide: const BorderSide(
-              color: Color.fromARGB(255, 8, 43, 72),
-            ),
-          ),
-          focusedBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(15),
-            borderSide: const BorderSide(
-              color: Color.fromARGB(255, 8, 43, 72),
-              width: 2,
-            ),
-          ),
-          errorBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(15),
-            borderSide: const BorderSide(color: Colors.red),
-          ),
-          focusedErrorBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(15),
-            borderSide: const BorderSide(color: Colors.red, width: 2),
-          ),
-          hintText: hint,
-          hintStyle: const TextStyle(
-            color: Colors.grey,
-          ),
-          prefixIcon: Icon(
-            icon,
-            color: const Color.fromARGB(255, 5, 62, 81),
+            borderRadius: BorderRadius.circular(12),
+            borderSide: BorderSide.none,
           ),
           filled: true,
-          fillColor: _isEditing ? Colors.white : Colors.grey[100],
+          fillColor: _isEditing ? Colors.white : Colors.grey[50],
           contentPadding: const EdgeInsets.symmetric(
-            vertical: 15,
-            horizontal: 20,
+            horizontal: 16,
+            vertical: 16,
           ),
-        ),
-        style: TextStyle(
-          color: _isEditing ? Colors.black : Colors.black54,
         ),
       ),
     );
   }
 
-  // Add Chat Navigation Method
-
-  // Add Analytics Navigation Method
-  void navigateToAnalytics() {
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (context) => const ShopAnalyticsDashboard(),
+  Widget _buildActionButton() {
+    return Container(
+      width: double.infinity,
+      height: 55,
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(15),
+        gradient: LinearGradient(
+          colors: _isEditing
+              ? [Colors.green.shade400, Colors.green.shade600]
+              : [
+                  Theme.of(context).primaryColor,
+                  Theme.of(context).primaryColor
+                ],
+          begin: Alignment.centerLeft,
+          end: Alignment.centerRight,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: (_isEditing ? Colors.green : Theme.of(context).primaryColor)
+                .withOpacity(0.3),
+            spreadRadius: 1,
+            blurRadius: 8,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: ElevatedButton(
+        onPressed: _isEditing
+            ? _updateUserData
+            : () => setState(() => _isEditing = true),
+        style: ElevatedButton.styleFrom(
+          backgroundColor: Colors.transparent,
+          shadowColor: Colors.transparent,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(15),
+          ),
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              _isEditing ? Icons.check : Icons.edit,
+              color: Colors.white,
+            ),
+            const SizedBox(width: 5),
+            Text(_isEditing ? 'Save Changes' : 'Edit Profile',
+                style: GoogleFonts.poppins(
+                    color: Colors.white,
+                    fontWeight: FontWeight.w600,
+                    fontSize: 17)),
+          ],
+        ),
       ),
     );
   }

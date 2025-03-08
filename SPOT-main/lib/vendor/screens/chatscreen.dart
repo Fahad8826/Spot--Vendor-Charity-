@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:google_fonts/google_fonts.dart';
 
 class VendorChatScreen extends StatefulWidget {
   final Map<String, dynamic> customerData;
@@ -149,7 +150,7 @@ class _VendorChatScreenState extends State<VendorChatScreen> {
   @override
   Widget build(BuildContext context) {
     if (isLoading) {
-      return const Scaffold(
+      return Scaffold(
         body: Center(child: CircularProgressIndicator()),
       );
     }
@@ -166,7 +167,11 @@ class _VendorChatScreenState extends State<VendorChatScreen> {
       appBar: AppBar(
         title: Text(
           widget.customerData['name'] as String? ?? 'Chat',
-          style: const TextStyle(color: Colors.black),
+          style: GoogleFonts.poppins(
+            fontSize: 18,
+            fontWeight: FontWeight.w600,
+            color: Colors.black,
+          ),
         ),
         backgroundColor: Colors.white,
         elevation: 1,
@@ -222,7 +227,11 @@ class _VendorChatScreenState extends State<VendorChatScreen> {
                               vertical: 10.0,
                             ),
                             decoration: BoxDecoration(
-                              color: isMe ? Colors.blue[100] : Colors.grey[300],
+                              color: isMe
+                                  ? Color(
+                                      0xFF1E40AF) // Deep Blue for Sent Messages
+                                  : Color(
+                                      0xFFE5E7EB), // Light Gray for Received
                               borderRadius: BorderRadius.circular(20),
                             ),
                             child: Column(
@@ -232,8 +241,10 @@ class _VendorChatScreenState extends State<VendorChatScreen> {
                               children: [
                                 Text(
                                   message,
-                                  style: const TextStyle(
-                                    color: Colors.black87,
+                                  style: GoogleFonts.poppins(
+                                    fontSize: 15,
+                                    fontWeight: FontWeight.w500,
+                                    color: isMe ? Colors.white : Colors.black87,
                                   ),
                                 ),
                                 const SizedBox(height: 4),
@@ -241,7 +252,7 @@ class _VendorChatScreenState extends State<VendorChatScreen> {
                                   timestamp != null
                                       ? _formatTimestamp(timestamp)
                                       : '',
-                                  style: TextStyle(
+                                  style: GoogleFonts.poppins(
                                     fontSize: 12,
                                     color: Colors.black54,
                                   ),
@@ -266,26 +277,35 @@ class _VendorChatScreenState extends State<VendorChatScreen> {
                     controller: _messageController,
                     decoration: InputDecoration(
                       hintText: 'Type a message...',
+                      hintStyle: GoogleFonts.poppins(color: Colors.black54),
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(25),
+                        borderSide: BorderSide.none,
                       ),
+                      filled: true,
+                      fillColor: Colors.white,
                       contentPadding: const EdgeInsets.symmetric(
                         horizontal: 16,
-                        vertical: 8,
+                        vertical: 10,
                       ),
                     ),
                   ),
                 ),
-                IconButton(
-                  icon: const Icon(Icons.send),
-                  color: Colors.blue,
-                  onPressed: _sendMessage,
+                const SizedBox(width: 8),
+                CircleAvatar(
+                  backgroundColor: Color(0xFF1E40AF),
+                  radius: 24,
+                  child: IconButton(
+                    icon: const Icon(Icons.send, color: Colors.white),
+                    onPressed: _sendMessage,
+                  ),
                 ),
               ],
             ),
           ),
         ],
       ),
+      backgroundColor: Color(0xFFF3F4F6), // Light background color
     );
   }
 

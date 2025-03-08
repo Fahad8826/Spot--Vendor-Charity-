@@ -1,14 +1,13 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:spot/Firbase/auth_service.dart';
 import 'package:spot/vendor/authentication/login.dart';
+
 import 'package:spot/vendor/screens/chatlist.dart';
-import 'package:spot/vendor/screens/chatscreen.dart';
-import 'package:spot/vendor/screens/vendorCharitypage.dart';
-import 'package:spot/vendor/screens/vendorProfilepage.dart';
+import 'package:spot/vendor/screens/vendorReport.dart';
 import 'package:spot/vendor/screens/vendorcharityRead.dart';
 import 'package:spot/vendor/screens/vendorfeedback.dart';
+import 'package:google_fonts/google_fonts.dart';
 
 class VendorBottomNavbar extends StatefulWidget {
   const VendorBottomNavbar({super.key});
@@ -21,7 +20,6 @@ class _VendorBottomNavbarState extends State<VendorBottomNavbar> {
   int indexnum = 0;
   String? currentVendorId;
   String? currentVendorName;
-
   final AuthService _authService = AuthService();
 
   @override
@@ -37,7 +35,6 @@ class _VendorBottomNavbarState extends State<VendorBottomNavbar> {
         currentVendorId = user.uid;
       });
 
-      // Fetch vendor details from Firestore
       final vendorDoc = await FirebaseFirestore.instance
           .collection('vendors')
           .doc(currentVendorId)
@@ -57,46 +54,70 @@ class _VendorBottomNavbarState extends State<VendorBottomNavbar> {
     final String vendorEmail = _authService.getCurrentUserEmail();
 
     List<Widget> tabWidgets = [
-      const CharityRead(),
-      const VendorProfilePage(),
+      // BarChart(),
+      ShopAnalyticsDashboard(),
+      CharityRead(),
+      // VendorProfilePage(),
       FeedbackPage(vendorEmail: vendorEmail),
       VendorChatListScreen(),
     ];
 
     return Scaffold(
-      bottomNavigationBar: BottomNavigationBar(
-        backgroundColor: Colors.white,
-        items: const [
-          BottomNavigationBarItem(
-            icon: Icon(Icons.volunteer_activism),
-            label: 'Charity',
-            backgroundColor: Colors.white,
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.person),
-            label: "Profile",
-            backgroundColor: Colors.white,
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.feed),
-            label: 'Feedback',
-            backgroundColor: Colors.white,
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.chat),
-            label: 'Chat',
-            backgroundColor: Colors.white,
-          ),
-        ],
-        currentIndex: indexnum,
-        showUnselectedLabels: true,
-        onTap: (int index) {
-          setState(() {
-            indexnum = index;
-          });
-        },
+      body: Container(
+        child: Center(child: tabWidgets[indexnum]),
       ),
-      body: tabWidgets.elementAt(indexnum),
+      bottomNavigationBar: Container(
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.only(
+            topLeft: Radius.circular(20),
+            topRight: Radius.circular(20),
+          ),
+        ),
+        child: ClipRRect(
+          child: BottomNavigationBar(
+            backgroundColor: Colors.white.withOpacity(0.95),
+            elevation: 5,
+            type: BottomNavigationBarType.fixed,
+            currentIndex: indexnum,
+            showUnselectedLabels: true,
+            selectedLabelStyle:
+                GoogleFonts.poppins(fontWeight: FontWeight.w600, fontSize: 10),
+            unselectedLabelStyle:
+                GoogleFonts.poppins(fontWeight: FontWeight.w500, fontSize: 10),
+            onTap: (int index) {
+              setState(() {
+                indexnum = index;
+              });
+            },
+            items: [
+              BottomNavigationBarItem(
+                icon: Icon(Icons.home,
+                    color:
+                        indexnum == 0 ? Color(0xFF053E51) : Color(0xFF2E8B57)),
+                label: 'Home',
+              ),
+              BottomNavigationBarItem(
+                icon: Icon(Icons.person,
+                    color:
+                        indexnum == 1 ? Color(0xFF053E51) : Color(0xFF2E8B57)),
+                label: "Donations",
+              ),
+              BottomNavigationBarItem(
+                icon: Icon(Icons.feedback,
+                    color:
+                        indexnum == 2 ? Color(0xFF053E51) : Color(0xFF2E8B57)),
+                label: 'Feedback',
+              ),
+              BottomNavigationBarItem(
+                icon: Icon(Icons.chat,
+                    color:
+                        indexnum == 3 ? Color(0xFF053E51) : Color(0xFF2E8B57)),
+                label: 'Chat',
+              ),
+            ],
+          ),
+        ),
+      ),
     );
   }
 
