@@ -7,6 +7,7 @@ import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:spot/Firbase/auth_service.dart';
 import 'package:spot/vendor/authentication/login.dart';
+import 'package:google_fonts/google_fonts.dart';
 
 class Charityprofile extends StatefulWidget {
   const Charityprofile({super.key});
@@ -29,6 +30,7 @@ class _CharityprofileState extends State<Charityprofile> {
   bool _isEditing = false;
   bool _isSaving = false;
   bool _isUploadingImage = false;
+  bool _isLoading = true;
 
   @override
   void initState() {
@@ -37,6 +39,8 @@ class _CharityprofileState extends State<Charityprofile> {
     _numberController = TextEditingController();
     _emailController = TextEditingController();
     _categoryController = TextEditingController();
+
+    _loadUserData();
   }
 
   @override
@@ -46,6 +50,40 @@ class _CharityprofileState extends State<Charityprofile> {
     _emailController.dispose();
     _categoryController.dispose();
     super.dispose();
+  }
+
+  Future<void> _loadUserData() async {
+    setState(() => _isLoading = true);
+
+    final currentUser = _firebaseAuth.currentUser;
+    if (currentUser == null) {
+      setState(() => _isLoading = false);
+      return;
+    }
+
+    try {
+      final doc = await FirebaseFirestore.instance
+          .collection('charity_reg')
+          .doc(currentUser.uid)
+          .get();
+
+      if (doc.exists) {
+        final data = doc.data();
+        setState(() {
+          _nameController.text = data?['name'] ?? '';
+          _numberController.text = data?['number'] ?? '';
+          _emailController.text = data?['email'] ?? '';
+          _categoryController.text = data?['category'] ?? '';
+          _imageUrl = data?['image'];
+        });
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error loading profile: $e')),
+      );
+    } finally {
+      setState(() => _isLoading = false);
+    }
   }
 
   Future<void> _pickImage() async {
@@ -95,6 +133,7 @@ class _CharityprofileState extends State<Charityprofile> {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Failed to upload image')),
         );
+        setState(() => _isSaving = false);
         return;
       }
     }
@@ -107,92 +146,334 @@ class _CharityprofileState extends State<Charityprofile> {
       'image': _imageUrl ?? '',
     };
 
-    await FirebaseFirestore.instance
-        .collection('CV_users')
-        .doc(currentUser.uid)
-        .set(data, SetOptions(merge: true));
+    try {
+      await FirebaseFirestore.instance
+          .collection('charity_reg')
+          .doc(currentUser.uid)
+          .set(data, SetOptions(merge: true));
 
-    setState(() => _isSaving = false);
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Profile updated successfully')),
-    );
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Profile updated successfully'),
+          backgroundColor: Color(0xFF2E8B57),
+        ),
+      );
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Error updating profile: $e'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    } finally {
+      setState(() => _isSaving = false);
+    }
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Profile Page'),
+        title: Text(
+          'Charity Profile',
+          style: GoogleFonts.poppins(
+            fontWeight: FontWeight.w600,
+            fontSize: 20,
+          ),
+        ),
         centerTitle: true,
+        backgroundColor: Color(0xFF053E51),
+        foregroundColor: Colors.white,
+        elevation: 0,
         actions: [
           IconButton(
             onPressed: _showLogoutDialog,
-            icon: const Icon(Icons.logout_sharp),
+            icon: const Icon(
+              Icons.logout_rounded,
+              color: Colors.white,
+            ),
           )
         ],
       ),
-      body: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          children: [
-            Stack(
-              children: [
-                CircleAvatar(
-                  radius: 50,
-                  backgroundImage: _image != null
-                      ? FileImage(_image!)
-                      : (_imageUrl != null && _imageUrl!.isNotEmpty
-                          ? NetworkImage(_imageUrl!)
-                          : null) as ImageProvider?,
-                  child: (_image == null &&
-                          (_imageUrl == null || _imageUrl!.isEmpty))
-                      ? const Icon(Icons.person, size: 50)
-                      : null,
+      body: _isLoading
+          ? const Center(
+              child: CircularProgressIndicator(
+                color: Color(0xFF2E8B57),
+              ),
+            )
+          : Container(
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  colors: [
+                    Color(0xFF053E51).withOpacity(0.05),
+                    Color(0xFF2E8B57).withOpacity(0.1),
+                  ],
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
                 ),
-                if (_isEditing)
-                  Positioned(
-                    bottom: 0,
-                    right: 0,
-                    child: IconButton(
-                      icon: const Icon(Icons.camera_alt, color: Colors.blue),
-                      onPressed: _pickImage,
+              ),
+              child: SingleChildScrollView(
+                child: Column(
+                  children: [
+                    // Profile header with background
+                    Container(
+                      width: double.infinity,
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          colors: [Color(0xFF053E51), Color(0xFF2E8B57)],
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                        ),
+                        borderRadius: BorderRadius.only(
+                          bottomLeft: Radius.circular(30),
+                          bottomRight: Radius.circular(30),
+                        ),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.grey.withOpacity(0.5),
+                            spreadRadius: 2,
+                            blurRadius: 7,
+                            offset: Offset(0, 3),
+                          ),
+                        ],
+                      ),
+                      child: Padding(
+                        padding: const EdgeInsets.fromLTRB(20, 20, 20, 30),
+                        child: Column(
+                          children: [
+                            // Profile image
+                            Container(
+                              decoration: BoxDecoration(
+                                shape: BoxShape.circle,
+                                border: Border.all(
+                                  color: Colors.white,
+                                  width: 4,
+                                ),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: Colors.black.withOpacity(0.2),
+                                    spreadRadius: 2,
+                                    blurRadius: 10,
+                                    offset: Offset(0, 4),
+                                  ),
+                                ],
+                              ),
+                              child: Stack(
+                                children: [
+                                  CircleAvatar(
+                                    radius: 60,
+                                    backgroundColor: Colors.white,
+                                    backgroundImage: _image != null
+                                        ? FileImage(_image!)
+                                        : (_imageUrl != null &&
+                                                _imageUrl!.isNotEmpty
+                                            ? NetworkImage(_imageUrl!)
+                                            : null) as ImageProvider?,
+                                    child: (_image == null &&
+                                            (_imageUrl == null ||
+                                                _imageUrl!.isEmpty))
+                                        ? Icon(Icons.person,
+                                            size: 60, color: Color(0xFF053E51))
+                                        : null,
+                                  ),
+                                  if (_isEditing)
+                                    Positioned(
+                                      bottom: 0,
+                                      right: 0,
+                                      child: Container(
+                                        decoration: BoxDecoration(
+                                          color: Colors.white,
+                                          shape: BoxShape.circle,
+                                          boxShadow: [
+                                            BoxShadow(
+                                              color:
+                                                  Colors.black.withOpacity(0.2),
+                                              spreadRadius: 1,
+                                              blurRadius: 5,
+                                              offset: Offset(0, 2),
+                                            ),
+                                          ],
+                                        ),
+                                        child: CircleAvatar(
+                                          backgroundColor: Color(0xFF2E8B57),
+                                          radius: 20,
+                                          child: IconButton(
+                                            icon: const Icon(
+                                              Icons.camera_alt,
+                                              color: Colors.white,
+                                              size: 18,
+                                            ),
+                                            onPressed: _pickImage,
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                ],
+                              ),
+                            ),
+                            SizedBox(height: 15),
+                            Text(
+                              _nameController.text,
+                              style: GoogleFonts.poppins(
+                                fontSize: 22,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.white,
+                              ),
+                            ),
+                            SizedBox(height: 5),
+                            Text(
+                              _categoryController.text,
+                              style: GoogleFonts.poppins(
+                                fontSize: 16,
+                                color: Colors.white.withOpacity(0.9),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
                     ),
-                  ),
-              ],
+                    // Profile form section
+                    Padding(
+                      padding: const EdgeInsets.all(20.0),
+                      child: Card(
+                        elevation: 5,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(15),
+                        ),
+                        child: Padding(
+                          padding: const EdgeInsets.all(20.0),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                'Profile Information',
+                                style: GoogleFonts.poppins(
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.w600,
+                                  color: Color(0xFF053E51),
+                                ),
+                              ),
+                              Divider(thickness: 1.5),
+                              SizedBox(height: 15),
+                              _buildTextField('Organization Name',
+                                  Icons.business, _nameController),
+                              SizedBox(height: 15),
+                              _buildTextField('Email Address', Icons.email,
+                                  _emailController),
+                              SizedBox(height: 15),
+                              _buildTextField('Phone Number', Icons.phone,
+                                  _numberController),
+                              SizedBox(height: 15),
+                              _buildTextField('Category', Icons.category,
+                                  _categoryController),
+                              SizedBox(height: 25),
+                              _isSaving || _isUploadingImage
+                                  ? Center(
+                                      child: CircularProgressIndicator(
+                                        color: Color(0xFF2E8B57),
+                                      ),
+                                    )
+                                  : Center(
+                                      child: SizedBox(
+                                        width: double.infinity,
+                                        height: 50,
+                                        child: ElevatedButton(
+                                          onPressed: () async {
+                                            if (_isEditing) {
+                                              await _updateUserData();
+                                            }
+                                            setState(
+                                                () => _isEditing = !_isEditing);
+                                          },
+                                          style: ElevatedButton.styleFrom(
+                                            foregroundColor: Colors.white,
+                                            backgroundColor: _isEditing
+                                                ? Color(0xFF2E8B57)
+                                                : Color(0xFF053E51),
+                                            shape: RoundedRectangleBorder(
+                                              borderRadius:
+                                                  BorderRadius.circular(12),
+                                            ),
+                                            elevation: 3,
+                                          ),
+                                          child: Text(
+                                            _isEditing
+                                                ? 'Save Changes'
+                                                : 'Edit Profile',
+                                            style: GoogleFonts.poppins(
+                                              fontSize: 16,
+                                              fontWeight: FontWeight.w600,
+                                            ),
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
             ),
-            const SizedBox(height: 15),
-            _buildTextField('Username', Icons.person, _nameController),
-            const SizedBox(height: 15),
-            _buildTextField('Email', Icons.email, _emailController),
-            const SizedBox(height: 15),
-            _buildTextField('Phone', Icons.phone, _numberController),
-            const SizedBox(height: 15),
-            _buildTextField('Category', Icons.category, _categoryController),
-            const SizedBox(height: 20),
-            ElevatedButton(
-              onPressed: _isSaving || _isUploadingImage
-                  ? null
-                  : () async {
-                      setState(() => _isEditing = !_isEditing);
-                      if (!_isEditing) await _updateUserData();
-                    },
-              child: _isEditing ? const Text('Save') : const Text('Edit'),
-            ),
-          ],
-        ),
-      ),
     );
   }
 
   Widget _buildTextField(
       String label, IconData icon, TextEditingController controller) {
-    return TextField(
-      readOnly: !_isEditing,
-      controller: controller,
-      decoration: InputDecoration(
-        labelText: label,
-        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-        prefixIcon: Icon(icon),
+    return Container(
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(12),
+        boxShadow: _isEditing
+            ? [
+                BoxShadow(
+                  color: Colors.grey.withOpacity(0.2),
+                  spreadRadius: 1,
+                  blurRadius: 3,
+                  offset: Offset(0, 1),
+                ),
+              ]
+            : null,
+      ),
+      child: TextField(
+        readOnly: !_isEditing,
+        controller: controller,
+        decoration: InputDecoration(
+          labelText: label,
+          labelStyle: GoogleFonts.poppins(
+            color: Color(0xFF053E51).withOpacity(0.8),
+          ),
+          border: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(12),
+            borderSide: BorderSide(
+              color: Color(0xFF2E8B57),
+            ),
+          ),
+          enabledBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(12),
+            borderSide: BorderSide(
+              color: _isEditing ? Color(0xFF2E8B57) : Colors.grey.shade300,
+            ),
+          ),
+          focusedBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(12),
+            borderSide: BorderSide(
+              color: Color(0xFF2E8B57),
+              width: 2,
+            ),
+          ),
+          prefixIcon: Icon(
+            icon,
+            color: Color(0xFF053E51),
+          ),
+          filled: true,
+          fillColor: _isEditing ? Colors.white : Colors.grey.shade50,
+          contentPadding: EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+        ),
+        style: GoogleFonts.poppins(
+          fontSize: 15,
+        ),
       ),
     );
   }
@@ -201,17 +482,48 @@ class _CharityprofileState extends State<Charityprofile> {
     showDialog(
       context: context,
       builder: (_) => AlertDialog(
-        title: const Text('Log Out'),
-        content: const Text('Do you want to log out?'),
+        title: Text(
+          'Log Out',
+          style: GoogleFonts.poppins(
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+        content: Text(
+          'Are you sure you want to log out?',
+          style: GoogleFonts.poppins(),
+        ),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(15),
+        ),
         actions: [
           TextButton(
-              onPressed: () => Navigator.pop(context), child: const Text('No')),
-          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: Text(
+              'Cancel',
+              style: GoogleFonts.poppins(
+                color: Colors.grey.shade700,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+          ),
+          ElevatedButton(
             onPressed: () async {
               await _auth.signOut();
               gotologin(context);
             },
-            child: const Text('Yes'),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Color(0xFF053E51),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(8),
+              ),
+            ),
+            child: Text(
+              'Log Out',
+              style: GoogleFonts.poppins(
+                fontWeight: FontWeight.w500,
+                color: Colors.white,
+              ),
+            ),
           ),
         ],
       ),

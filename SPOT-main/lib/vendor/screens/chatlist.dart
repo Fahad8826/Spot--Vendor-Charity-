@@ -2,9 +2,13 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:animate_do/animate_do.dart';
 import 'package:spot/vendor/screens/chatscreen.dart';
+import 'package:intl/intl.dart';
 
 class VendorChatListScreen extends StatelessWidget {
+  const VendorChatListScreen({super.key});
+
   @override
   Widget build(BuildContext context) {
     final currentVendorId = FirebaseAuth.instance.currentUser?.uid;
@@ -39,106 +43,206 @@ class VendorChatListScreen extends StatelessWidget {
               return Center(
                 child: Text(
                   'Error: ${snapshot.error}',
-                  style: const TextStyle(color: Colors.white),
+                  style: GoogleFonts.poppins(
+                    color: Colors.white,
+                    fontSize: 16,
+                  ),
                 ),
               );
             }
 
-            if (!snapshot.hasData) {
+            if (snapshot.connectionState == ConnectionState.waiting) {
               return const Center(
-                  child: CircularProgressIndicator(color: Colors.white));
+                child: CircularProgressIndicator(color: Colors.white),
+              );
             }
 
-            final chatRooms = snapshot.data!.docs;
+            final chatRooms = snapshot.data?.docs ?? [];
 
             if (chatRooms.isEmpty) {
-              return const Center(
-                child: Text(
-                  'No messages yet',
-                  style: TextStyle(color: Colors.white, fontSize: 18),
+              return Center(
+                child: Padding(
+                  padding: const EdgeInsets.all(20.0),
+                  child: Text(
+                    'No messages yet',
+                    style: GoogleFonts.poppins(
+                      color: Colors.white,
+                      fontSize: 16,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
                 ),
               );
             }
 
-            return ListView.builder(
-              itemCount: chatRooms.length,
-              itemBuilder: (context, index) {
-                final chatRoom =
-                    chatRooms[index].data() as Map<String, dynamic>;
-                final participantDetails =
-                    chatRoom['participantDetails'] as Map<String, dynamic>;
+            return SafeArea(
+              child: Padding(
+                padding: const EdgeInsets.only(
+                    top: 10, left: 16, right: 16, bottom: 16),
+                child: ListView.builder(
+                  physics: const BouncingScrollPhysics(),
+                  itemCount: chatRooms.length,
+                  itemBuilder: (context, index) {
+                    final chatRoom =
+                        chatRooms[index].data() as Map<String, dynamic>;
+                    final participantDetails =
+                        chatRoom['participantDetails'] as Map<String, dynamic>;
 
-                final customerId = (chatRoom['participants'] as List)
-                    .firstWhere((id) => id != currentVendorId);
-                final customerData = participantDetails[customerId];
+                    // Extract customer ID
+                    final participants = chatRoom['participants'] as List;
+                    final customerId = participants.firstWhere(
+                        (id) => id != currentVendorId,
+                        orElse: () => '');
 
-                return Padding(
-                  padding: EdgeInsets.symmetric(vertical: 10),
-                  child: Card(
-                    color: Colors.white.withOpacity(0.9),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(16),
-                    ),
-                    elevation: 6,
-                    child: ListTile(
-                      contentPadding: const EdgeInsets.all(12),
-                      leading: CircleAvatar(
-                        radius: 28,
-                        backgroundColor: _getAvatarColor(customerData['name']),
-                        child: Text(
-                          customerData['name'][0].toUpperCase(),
-                          style: GoogleFonts.poppins(
-                            fontSize: 20,
-                            fontWeight: FontWeight.bold,
-                            color: Colors.white,
+                    if (customerId.isEmpty ||
+                        !participantDetails.containsKey(customerId)) {
+                      return const SizedBox.shrink();
+                    }
+
+                    final customerData = participantDetails[customerId];
+                    final customerName = customerData['name'] ?? 'Unknown';
+                    final lastMessage =
+                        chatRoom['lastMessage'] ?? 'No messages yet';
+
+                    // Format timestamp
+                    String formattedTime = '';
+                    if (chatRoom['lastMessageTime'] != null) {
+                      final timestamp =
+                          chatRoom['lastMessageTime'] as Timestamp;
+                      final messageDate = DateTime.fromMillisecondsSinceEpoch(
+                        timestamp.millisecondsSinceEpoch,
+                      );
+
+                      final now = DateTime.now();
+                      final today = DateTime(now.year, now.month, now.day);
+                      final messageDay = DateTime(
+                          messageDate.year, messageDate.month, messageDate.day);
+
+                      if (today.difference(messageDay).inDays == 0) {
+                        // Today - show time only
+                        formattedTime = DateFormat('HH:mm').format(messageDate);
+                      } else if (today.difference(messageDay).inDays == 1) {
+                        // Yesterday
+                        formattedTime = 'Yesterday';
+                      } else if (today.difference(messageDay).inDays < 7) {
+                        // This week - show day name
+                        formattedTime = DateFormat('EEE').format(messageDate);
+                      } else {
+                        // Older - show date
+                        formattedTime = DateFormat('dd/MM').format(messageDate);
+                      }
+                    }
+
+                    return FadeInUp(
+                      duration: Duration(milliseconds: 300 + (index * 100)),
+                      child: GestureDetector(
+                        onTap: () {
+                          final customerData = {
+                            'customerId': customerId,
+                            'name': participantDetails[customerId]['name'] ??
+                                'Unknown',
+                            'email':
+                                participantDetails[customerId]['email'] ?? '',
+                          };
+
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) =>
+                                  VendorChatScreen(customerData: customerData),
+                            ),
+                          );
+                        },
+                        child: Container(
+                          margin: const EdgeInsets.only(bottom: 16.0),
+                          decoration: BoxDecoration(
+                            color: Colors.white.withOpacity(0.9),
+                            borderRadius: BorderRadius.circular(16),
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.black.withOpacity(0.1),
+                                blurRadius: 10,
+                                spreadRadius: 2,
+                                offset: const Offset(0, 4),
+                              ),
+                            ],
+                          ),
+                          child: Padding(
+                            padding: const EdgeInsets.all(16.0),
+                            child: Row(
+                              children: [
+                                // Avatar
+                                CircleAvatar(
+                                  radius: 28,
+                                  backgroundColor:
+                                      _getAvatarColor(customerName),
+                                  child: Text(
+                                    customerName.isNotEmpty
+                                        ? customerName[0].toUpperCase()
+                                        : '?',
+                                    style: GoogleFonts.poppins(
+                                      fontSize: 20,
+                                      fontWeight: FontWeight.bold,
+                                      color: Colors.white,
+                                    ),
+                                  ),
+                                ),
+                                const SizedBox(width: 16),
+
+                                // Message content
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      Row(
+                                        mainAxisAlignment:
+                                            MainAxisAlignment.spaceBetween,
+                                        children: [
+                                          Expanded(
+                                            child: Text(
+                                              customerName,
+                                              style: GoogleFonts.poppins(
+                                                fontSize: 16,
+                                                fontWeight: FontWeight.w600,
+                                                color: const Color(0xFF053E51),
+                                              ),
+                                              maxLines: 1,
+                                              overflow: TextOverflow.ellipsis,
+                                            ),
+                                          ),
+                                          Text(
+                                            formattedTime,
+                                            style: GoogleFonts.poppins(
+                                              fontSize: 12,
+                                              color: Colors.grey[600],
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                      const SizedBox(height: 6),
+                                      Text(
+                                        lastMessage,
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
+                                        style: GoogleFonts.poppins(
+                                          fontSize: 14,
+                                          color: Colors.black54,
+                                          height: 1.3,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ],
+                            ),
                           ),
                         ),
                       ),
-                      title: Text(
-                        customerData['name'],
-                        style: GoogleFonts.poppins(
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.black87,
-                        ),
-                      ),
-                      subtitle: Text(
-                        chatRoom['lastMessage'] ?? 'No messages yet',
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: GoogleFonts.poppins(color: Colors.black54),
-                      ),
-                      trailing: Text(
-                        chatRoom['lastMessageTime'] != null
-                            ? DateTime.fromMillisecondsSinceEpoch(
-                                chatRoom['lastMessageTime']
-                                    .millisecondsSinceEpoch,
-                              ).toString().substring(11, 16)
-                            : '',
-                        style: GoogleFonts.poppins(
-                          fontSize: 14,
-                          color: Colors.black54,
-                        ),
-                      ),
-                      onTap: () {
-                        final customerData = {
-                          'customerId': customerId,
-                          'name': participantDetails[customerId]['name'],
-                          'email': participantDetails[customerId]['email'],
-                        };
-
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) =>
-                                VendorChatScreen(customerData: customerData),
-                          ),
-                        );
-                      },
-                    ),
-                  ),
-                );
-              },
+                    );
+                  },
+                ),
+              ),
             );
           },
         ),
@@ -148,12 +252,18 @@ class VendorChatListScreen extends StatelessWidget {
 
   Color _getAvatarColor(String name) {
     final colors = [
-      Colors.blue,
-      Colors.green,
-      Colors.red,
-      Colors.purple,
-      Colors.orange
+      const Color(0xFF1E88E5), // Blue
+      const Color(0xFF43A047), // Green
+      const Color(0xFFE53935), // Red
+      const Color(0xFF8E24AA), // Purple
+      const Color(0xFFEF6C00), // Orange
+      const Color(0xFF3949AB), // Indigo
+      const Color(0xFF00ACC1), // Cyan
     ];
-    return colors[name.length % colors.length].withOpacity(0.8);
+
+    // Use hash code for better distribution
+    final hashCode = name.isNotEmpty ? name.hashCode : 0;
+    final index = hashCode.abs() % colors.length;
+    return colors[index];
   }
 }

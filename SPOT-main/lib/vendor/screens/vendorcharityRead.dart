@@ -31,6 +31,7 @@ class _CharityReadState extends State<CharityRead> {
           ),
         ),
         backgroundColor: Colors.transparent,
+        elevation: 0,
       ),
       extendBodyBehindAppBar: true,
       body: Container(
@@ -76,7 +77,8 @@ class _CharityReadState extends State<CharityRead> {
                     padding: const EdgeInsets.only(top: 100),
                     child: ListView.builder(
                       padding: const EdgeInsets.symmetric(
-                        horizontal: 45.0,
+                        horizontal: 20.0,
+                        vertical: 10.0,
                       ),
                       itemCount: snapshot.data!.docs.length,
                       itemBuilder: (context, index) {
@@ -84,17 +86,16 @@ class _CharityReadState extends State<CharityRead> {
                             snapshot.data.docs[index];
                         final String docId = charitySnap.id;
 
-                        return SingleChildScrollView(
-                            child: Card(
-                          elevation: 8,
+                        return Card(
+                          elevation: 6,
                           margin: const EdgeInsets.symmetric(
-                              vertical: 8, horizontal: 1),
+                              vertical: 10, horizontal: 10),
                           shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(16),
+                            borderRadius: BorderRadius.circular(20),
                           ),
                           child: Container(
                             decoration: BoxDecoration(
-                              borderRadius: BorderRadius.circular(16),
+                              borderRadius: BorderRadius.circular(20),
                               gradient: LinearGradient(
                                 begin: Alignment.topLeft,
                                 end: Alignment.bottomRight,
@@ -103,37 +104,27 @@ class _CharityReadState extends State<CharityRead> {
                                   Colors.grey.shade50,
                                 ],
                               ),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: Colors.black.withOpacity(0.1),
+                                  blurRadius: 10,
+                                  offset: const Offset(0, 4),
+                                ),
+                              ],
                             ),
                             child: Stack(
                               children: [
                                 // Delete Button
                                 Positioned(
-                                  top: 0,
-                                  right: 0,
-                                  child: Material(
-                                    color: Colors.transparent,
-                                    child: InkWell(
-                                      onTap: () => _confirmDelete(docId),
-                                      borderRadius: const BorderRadius.only(
-                                        topRight: Radius.circular(16),
-                                        bottomLeft: Radius.circular(12),
-                                      ),
-                                      child: Container(
-                                        padding: const EdgeInsets.all(8),
-                                        decoration: BoxDecoration(
-                                          color: Colors.red.withOpacity(0.1),
-                                          borderRadius: const BorderRadius.only(
-                                            topRight: Radius.circular(16),
-                                            bottomLeft: Radius.circular(12),
-                                          ),
-                                        ),
-                                        child: Icon(
-                                          Icons.close,
-                                          size: 20,
-                                          color: Colors.red.shade600,
-                                        ),
-                                      ),
+                                  top: 10,
+                                  right: 10,
+                                  child: IconButton(
+                                    icon: Icon(
+                                      Icons.delete,
+                                      color: Colors.red.shade600,
+                                      size: 24,
                                     ),
+                                    onPressed: () => _confirmDelete(docId),
                                   ),
                                 ),
 
@@ -153,12 +144,12 @@ class _CharityReadState extends State<CharityRead> {
                                               color: Color(0xFF053E51)
                                                   .withOpacity(0.1),
                                               borderRadius:
-                                                  BorderRadius.circular(8),
+                                                  BorderRadius.circular(10),
                                             ),
                                             child: const Icon(
                                               Icons.volunteer_activism,
                                               color: Color(0xFF053E51),
-                                              size: 20,
+                                              size: 24,
                                             ),
                                           ),
                                           const SizedBox(width: 12),
@@ -166,7 +157,7 @@ class _CharityReadState extends State<CharityRead> {
                                             child: Text(
                                               charitySnap['P_name'],
                                               style: GoogleFonts.poppins(
-                                                fontSize: 16,
+                                                fontSize: 18,
                                                 fontWeight: FontWeight.w600,
                                                 color: Color(0xFF053E51),
                                               ),
@@ -183,13 +174,13 @@ class _CharityReadState extends State<CharityRead> {
                                         style: GoogleFonts.poppins(
                                           fontSize: 14,
                                           color: Colors.black87,
-                                          height: 1.4,
+                                          height: 1.5,
                                         ),
                                         maxLines: 2,
                                         overflow: TextOverflow.ellipsis,
                                       ),
 
-                                      const SizedBox(height: 12),
+                                      const SizedBox(height: 16),
 
                                       // Info Row
                                       Row(
@@ -201,14 +192,14 @@ class _CharityReadState extends State<CharityRead> {
                                                 Icon(
                                                   Icons.phone,
                                                   color: Colors.blue.shade700,
-                                                  size: 16,
+                                                  size: 18,
                                                 ),
                                                 const SizedBox(width: 6),
                                                 Expanded(
                                                   child: Text(
                                                     charitySnap['phone'],
                                                     style: GoogleFonts.poppins(
-                                                      fontSize: 13,
+                                                      fontSize: 14,
                                                       fontWeight:
                                                           FontWeight.w500,
                                                       color:
@@ -228,13 +219,13 @@ class _CharityReadState extends State<CharityRead> {
                                               Icon(
                                                 Icons.inventory_2,
                                                 color: Colors.green.shade700,
-                                                size: 16,
+                                                size: 18,
                                               ),
                                               const SizedBox(width: 6),
                                               Text(
                                                 '${charitySnap['quantity']} items',
                                                 style: GoogleFonts.poppins(
-                                                  fontSize: 13,
+                                                  fontSize: 14,
                                                   fontWeight: FontWeight.w500,
                                                   color: Colors.green.shade700,
                                                 ),
@@ -249,7 +240,7 @@ class _CharityReadState extends State<CharityRead> {
                               ],
                             ),
                           ),
-                        ));
+                        );
                       },
                     ),
                   );

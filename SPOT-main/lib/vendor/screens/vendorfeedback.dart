@@ -21,6 +21,7 @@ class FeedbackPage extends StatelessWidget {
           ),
         ),
         backgroundColor: Colors.transparent,
+        elevation: 0,
       ),
       extendBodyBehindAppBar: true,
       body: Container(
@@ -53,84 +54,140 @@ class FeedbackPage extends StatelessWidget {
             }
 
             if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
-              return const Center(
-                child: Text(
-                  'No feedback available for your shop.',
-                  style: TextStyle(color: Colors.white),
+              return Center(
+                child: Padding(
+                  padding: const EdgeInsets.all(20.0),
+                  child: Text(
+                    'No feedback available for your shop.',
+                    style: GoogleFonts.poppins(
+                      fontSize: 16,
+                      color: Colors.white,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
                 ),
               );
             }
 
             final feedbackDocs = snapshot.data!.docs;
 
-            return Padding(
-              padding: const EdgeInsets.symmetric(vertical: 90),
-              child: ListView.builder(
-                padding: const EdgeInsets.all(16.0),
-                itemCount: feedbackDocs.length,
-                itemBuilder: (context, index) {
-                  final feedback =
-                      feedbackDocs[index].data() as Map<String, dynamic>;
-                  final userEmail = feedback['userEmail'] ?? 'Anonymous';
-                  final rating = feedback['rating'] ?? 0.0;
-                  final comment = feedback['comment'] ?? 'No comment';
+            return SafeArea(
+              child: Padding(
+                padding: const EdgeInsets.only(
+                    top: 10, left: 16, right: 16, bottom: 16),
+                child: ListView.builder(
+                  physics: const BouncingScrollPhysics(),
+                  itemCount: feedbackDocs.length,
+                  itemBuilder: (context, index) {
+                    final feedback =
+                        feedbackDocs[index].data() as Map<String, dynamic>;
+                    final userEmail = feedback['userEmail'] ?? 'Anonymous';
+                    final rating = (feedback['rating'] ?? 0.0) is int
+                        ? (feedback['rating'] ?? 0.0).toDouble()
+                        : feedback['rating'] ?? 0.0;
+                    final comment = feedback['comment'] ?? 'No comment';
+                    final timestamp = feedback['timestamp'] as Timestamp?;
+                    final date = timestamp != null
+                        ? DateTime.fromMillisecondsSinceEpoch(
+                            timestamp.millisecondsSinceEpoch)
+                        : null;
 
-                  return FadeInUp(
-                    duration: Duration(milliseconds: 300 + (index * 100)),
-                    child: Card(
-                      margin: const EdgeInsets.only(bottom: 16.0),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(20),
-                      ),
-                      elevation: 6,
-                      color: Colors.white.withOpacity(0.9),
-                      child: Padding(
-                        padding: const EdgeInsets.all(16.0),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              'User: $userEmail',
-                              style: GoogleFonts.poppins(
-                                fontSize: 16,
-                                fontWeight: FontWeight.bold,
-                                color: Colors.black87,
-                              ),
-                            ),
-                            const SizedBox(height: 8),
-                            Row(
-                              children: [
-                                ...List.generate(
-                                  rating.round(),
-                                  (index) => BounceInDown(
-                                    delay: Duration(
-                                        milliseconds: 200 + (index * 100)),
-                                    child: const Icon(
-                                      Icons.star,
-                                      color: Colors.amber,
-                                      size: 22,
-                                    ),
-                                  ),
-                                ),
-                                const SizedBox(width: 8),
-                                Text(
-                                  rating.toStringAsFixed(1),
-                                  style: GoogleFonts.poppins(
-                                      fontSize: 16, color: Colors.black87),
-                                ),
-                              ],
-                            ),
-                            Text(
-                              'Comment: $comment',
-                              style: GoogleFonts.poppins(
-                                  fontSize: 14, color: Colors.black87),
+                    return FadeInUp(
+                      duration: Duration(milliseconds: 300 + (index * 100)),
+                      child: Container(
+                        margin: const EdgeInsets.only(bottom: 16.0),
+                        decoration: BoxDecoration(
+                          color: Colors.white.withOpacity(0.9),
+                          borderRadius: BorderRadius.circular(16),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withOpacity(0.1),
+                              blurRadius: 10,
+                              spreadRadius: 2,
+                              offset: const Offset(0, 4),
                             ),
                           ],
                         ),
+                        child: Padding(
+                          padding: const EdgeInsets.all(16.0),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Row(
+                                mainAxisAlignment:
+                                    MainAxisAlignment.spaceBetween,
+                                children: [
+                                  Expanded(
+                                    child: Text(
+                                      userEmail,
+                                      style: GoogleFonts.poppins(
+                                        fontSize: 16,
+                                        fontWeight: FontWeight.w600,
+                                        color: const Color(0xFF053E51),
+                                      ),
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                  ),
+                                  if (date != null)
+                                    Text(
+                                      '${date.day}/${date.month}/${date.year}',
+                                      style: GoogleFonts.poppins(
+                                        fontSize: 12,
+                                        color: Colors.grey[600],
+                                      ),
+                                    ),
+                                ],
+                              ),
+                              const SizedBox(height: 12),
+                              Row(
+                                children: [
+                                  ...List.generate(
+                                    5,
+                                    (index) => Padding(
+                                      padding: const EdgeInsets.only(right: 3),
+                                      child: FadeIn(
+                                        delay: Duration(
+                                            milliseconds: 200 + (index * 100)),
+                                        child: Icon(
+                                          index < rating.round()
+                                              ? Icons.star
+                                              : Icons.star_border,
+                                          color: Colors.amber,
+                                          size: 22,
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                  const SizedBox(width: 8),
+                                  Text(
+                                    rating.toStringAsFixed(1),
+                                    style: GoogleFonts.poppins(
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.w500,
+                                      color: Colors.black87,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(height: 10),
+                              const Divider(thickness: 1),
+                              const SizedBox(height: 8),
+                              Text(
+                                comment,
+                                style: GoogleFonts.poppins(
+                                  fontSize: 14,
+                                  color: Colors.black87,
+                                  height: 1.5,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
                       ),
-                    ),
-                  );
-                },
+                    );
+                  },
+                ),
               ),
             );
           },
